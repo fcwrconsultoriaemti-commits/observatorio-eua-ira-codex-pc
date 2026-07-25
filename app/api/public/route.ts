@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { registerAllModules } from "../../../../lib/monitors";
-import { collectAll, getEvents, getAlerts, getSummary } from "../../../../lib/core";
-import { assessAllEvents, getGlobalRiskIndex } from "../../../../lib/impact";
-import { getClientCount, getSSEStats } from "../../../../lib/sse";
+import { registerAllModules } from "../../../lib/monitors";
+import { collectAll, getEvents, getAlerts, getSummary } from "../../../lib/core";
+import { assessAllEvents, getGlobalRiskIndex } from "../../../lib/impact";
+import { getClientCount, getSSEStats } from "../../../lib/sse";
 
 let initialized = false;
 async function ensureInit() {
@@ -107,7 +107,7 @@ export async function GET(req: Request) {
         });
       }
       case "stream": {
-        const { createSSEResponse } = await import("../../../../lib/sse");
+        const { createSSEResponse } = await import("../../../lib/sse");
         const category = url.searchParams.get("category") || undefined;
         const riskLevel = url.searchParams.get("riskLevel") || undefined;
         return createSSEResponse({ category, riskLevel });

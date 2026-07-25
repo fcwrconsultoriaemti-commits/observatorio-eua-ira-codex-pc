@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { registerAllModules } from "../../../../lib/monitors";
-import { getEvents, getAlerts } from "../../../../lib/core";
-import { askCopilot, getSuggestedQuestions } from "../../../../lib/copilot";
+import { registerAllModules } from "../../../lib/monitors";
+import { getEvents, getAlerts } from "../../../lib/core";
+import { askCopilot, getSuggestedQuestions } from "../../../lib/copilot";
 
 let initialized = false;
 async function ensureInit() {

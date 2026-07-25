@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { registerAllModules } from "../../../../lib/monitors";
-import { collectAll, getEvents, getSummary, getAlerts, healthCheck } from "../../../../lib/core";
-import { detectTrends, detectAnomalies, calculateImpactScore } from "../../../../lib/ai";
-import { assessAllEvents, getGlobalRiskIndex } from "../../../../lib/impact";
-import { investigate, getSuggestedQuestions } from "../../../../lib/investigator";
-import { generatePredictions, getModels } from "../../../../lib/prediction";
-import { buildTimeline } from "../../../../lib/timeline";
-import { findCorrelationChains, buildConsequenceTree } from "../../../../lib/correlation/advanced";
+import { registerAllModules } from "../../../lib/monitors";
+import { collectAll, getEvents, getSummary, getAlerts, healthCheck } from "../../../lib/core";
+import { detectTrends, detectAnomalies, calculateImpactScore } from "../../../lib/ai";
+import { assessAllEvents, getGlobalRiskIndex } from "../../../lib/impact";
+import { investigate, getSuggestedQuestions } from "../../../lib/investigator";
+import { generatePredictions, getModels } from "../../../lib/prediction";
+import { buildTimeline } from "../../../lib/timeline";
+import { findCorrelationChains, buildConsequenceTree } from "../../../lib/correlation/advanced";
 
 let initialized = false;
 async function ensureInit() {

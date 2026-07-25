@@ -1,4 +1,4 @@
-import { createSSEResponse, getClientCount } from "../../../../lib/sse";
+import { createSSEResponse, getClientCount } from "../../../lib/sse";
 
 export const dynamic = "force-dynamic";
 
