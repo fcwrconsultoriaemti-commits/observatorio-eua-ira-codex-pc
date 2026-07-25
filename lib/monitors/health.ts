@@ -31,7 +31,7 @@ const SEED_EVENTS: GlobalEvent[] = [
     riskLevel: "critico",
     impact: { operational: 40, humanitarian: 80, economic: 55, environmental: 20, security: 25 },
     confidence: 0.78,
-    tags: ["saude", "malaria", resistencia, "africa", "promed"],
+    tags: ["saude", "malaria", "resistencia", "africa", "promed"],
     relatedEvents: [],
     metadata: { resistance: "artemisinin", region: "West Africa", source_type: "ProMED" },
   },
