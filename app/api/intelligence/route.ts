@@ -71,11 +71,11 @@ export async function GET(req: Request) {
       }
 
       default:
-        return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+        return NextResponse.json({ error: "Ação desconhecida" }, { status: 400 });
     }
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal error" },
+      { error: err instanceof Error ? err.message : "Erro interno" },
       { status: 500 }
     );
   }

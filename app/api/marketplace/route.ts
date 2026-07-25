@@ -22,15 +22,15 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data: getPluginHealth() });
 
       case "search": {
-        if (!query) return NextResponse.json({ success: false, error: "q is required for search" }, { status: 400 });
+        if (!query) return NextResponse.json({ success: false, error: "q é obrigatório para busca" }, { status: 400 });
         return NextResponse.json({ success: true, data: searchPlugins(query) });
       }
 
       default:
-        return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
+        return NextResponse.json({ success: false, error: "Ação desconhecida" }, { status: 400 });
     }
   } catch (err) {
-    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Erro interno" }, { status: 500 });
   }
 }
 
@@ -41,22 +41,22 @@ export async function POST(req: NextRequest) {
 
     switch (action) {
       case "install": {
-        if (!body.pluginId) return NextResponse.json({ success: false, error: "pluginId is required" }, { status: 400 });
+        if (!body.pluginId) return NextResponse.json({ success: false, error: "pluginId é obrigatório" }, { status: 400 });
         const connector = installPlugin(body.pluginId, body.config || {});
         return NextResponse.json({ success: true, data: connector });
       }
 
       case "uninstall": {
-        if (!body.connectorId) return NextResponse.json({ success: false, error: "connectorId is required" }, { status: 400 });
+        if (!body.connectorId) return NextResponse.json({ success: false, error: "connectorId é obrigatório" }, { status: 400 });
         const result = uninstallPlugin(body.connectorId);
-        if (!result) return NextResponse.json({ success: false, error: "Connector not found" }, { status: 404 });
+        if (!result) return NextResponse.json({ success: false, error: "Conector não encontrado" }, { status: 404 });
         return NextResponse.json({ success: true, data: { uninstalled: true } });
       }
 
       default:
-        return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
+        return NextResponse.json({ success: false, error: "Ação desconhecida" }, { status: 400 });
     }
   } catch (err) {
-    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Erro interno" }, { status: 500 });
   }
 }

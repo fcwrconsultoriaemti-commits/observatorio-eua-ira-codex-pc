@@ -34,10 +34,10 @@ export async function GET(req: Request) {
       case "summary": return handleSummary();
       case "health": return handleHealth();
       case "modules": return handleModules();
-      default: return NextResponse.json({ error: "Not found", availableEndpoints: getEndpoints() }, { status: 404 });
+        default: return NextResponse.json({ error: "Não encontrado", availableEndpoints: getEndpoints() }, { status: 404 });
     }
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Erro interno" }, { status: 500 });
   }
 }
 
@@ -54,9 +54,9 @@ export async function POST(req: Request) {
       const result = investigate(body.question, events, alerts);
       return NextResponse.json(result);
     }
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Erro interno" }, { status: 500 });
   }
 }
 

@@ -1,5 +1,5 @@
 // ============================================================
-// INTEGRATION MARKETPLACE — Plugin & Connector Management
+// MARKETPLACE DE INTEGRAÇÕES — Gerenciamento de Plugins e Conectores
 // ============================================================
 
 export interface Connector {
@@ -40,18 +40,18 @@ export interface MarketplacePlugin {
   configSchema: Record<string, unknown>;
 }
 
-// ─── IN-MEMORY STORES ─────────────────────────────────────
+// ─── ARMAZENAMENTO EM MEMÓRIA ───────────────────────────────
 
 const connectors: Map<string, Connector> = new Map();
 const installedConnectors: Map<string, Connector> = new Map();
 
-// ─── PRE-BUILT PLUGIN CATALOG ──────────────────────────────
+// ─── CATÁLOGO DE PLUGINS PRÉ-CONSTRUÍDOS ────────────────────
 
 const pluginCatalog: MarketplacePlugin[] = [
   {
     id: "PLUGIN-USGS-EQ",
-    name: "USGS Earthquake Feed",
-    description: "Real-time earthquake data from the United States Geological Survey. Provides magnitude, depth, location, and tsunami potential for global seismic events.",
+    name: "Feed de Terremotos USGS",
+    description: "Dados de terremotos em tempo real do Serviço Geológico dos Estados Unidos. Fornece magnitude, profundidade, localização e potencial de tsunami para eventos sísmicos globais.",
     version: "2.1.0",
     author: "USGS",
     category: "data_source",
@@ -62,13 +62,13 @@ const pluginCatalog: MarketplacePlugin[] = [
     documentation: "https://earthquake.usgs.gov/fdsnws/event/1/",
     configSchema: {
       endpoint: { type: "string", default: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_hour.geojson" },
-      refreshInterval: { type: "number", default: 60, description: "Refresh interval in seconds" },
+      refreshInterval: { type: "number", default: 60, description: "Intervalo de atualização em segundos" },
     },
   },
   {
     id: "PLUGIN-NOAA-WEATHER",
-    name: "NOAA Weather Alerts",
-    description: "National Weather Service active alerts for the United States. Includes severe weather warnings, watches, and advisories.",
+    name: "Alertas Meteorológicos NOAA",
+    description: "Alertas ativos do Serviço Nacional de Meteorologia para os Estados Unidos. Inclui avisos, observações e orientações de clima severo.",
     version: "3.0.2",
     author: "NOAA",
     category: "data_source",
@@ -84,8 +84,8 @@ const pluginCatalog: MarketplacePlugin[] = [
   },
   {
     id: "PLUGIN-NASA-FIRMS",
-    name: "NASA FIRMS Fire Data",
-    description: "Fire Information for Resource Management System. Satellite-detected active fire/hotspot data globally from MODIS and VIIRS.",
+    name: "Dados de Incêndios NASA FIRMS",
+    description: "Sistema de Informação de Incêndios para Gestão de Recursos. Dados de focos ativos detectados por satélite globalmente via MODIS e VIIRS.",
     version: "1.5.0",
     author: "NASA",
     category: "data_source",
@@ -95,15 +95,15 @@ const pluginCatalog: MarketplacePlugin[] = [
     lastUpdated: "2025-10-20T00:00:00Z",
     documentation: "https://firms.modaps.eosdis.nasa.gov/api/",
     configSchema: {
-      apiKey: { type: "string", required: true, description: "NASA FIRMS API key" },
+      apiKey: { type: "string", required: true, description: "Chave de API NASA FIRMS" },
       endpoint: { type: "string", default: "https://firms.modaps.eosdis.nasa.gov/api/area/csv" },
       refreshInterval: { type: "number", default: 300 },
     },
   },
   {
     id: "PLUGIN-SENTINEL-HUB",
-    name: "Sentinel Hub Imagery",
-    description: "Copernicus Sentinel satellite imagery access. NDVI, true color, false color, and custom band combinations for earth observation.",
+    name: "Imagens Sentinel Hub",
+    description: "Acesso a imagens de satélite Copernicus Sentinel. NDVI, cores verdadeiras, cores falsas e combinações personalizadas de bandas para observação da Terra.",
     version: "2.3.1",
     author: "Sinergise",
     category: "data_source",
@@ -119,8 +119,8 @@ const pluginCatalog: MarketplacePlugin[] = [
   },
   {
     id: "PLUGIN-TELEGRAM",
-    name: "Telegram Notifications",
-    description: "Send alert notifications and intelligence summaries to Telegram channels and groups.",
+    name: "Notificações Telegram",
+    description: "Envie notificações de alertas e resumos de inteligência para canais e grupos do Telegram.",
     version: "1.2.0",
     author: "Community",
     category: "notification",
@@ -130,15 +130,15 @@ const pluginCatalog: MarketplacePlugin[] = [
     lastUpdated: "2025-09-05T00:00:00Z",
     documentation: "https://core.telegram.org/bots/api",
     configSchema: {
-      apiKey: { type: "string", required: true, description: "Bot token" },
+      apiKey: { type: "string", required: true, description: "Token do bot" },
       endpoint: { type: "string", default: "https://api.telegram.org" },
-      chatId: { type: "string", required: true, description: "Channel or group ID" },
+      chatId: { type: "string", required: true, description: "ID do canal ou grupo" },
     },
   },
   {
     id: "PLUGIN-DISCORD",
-    name: "Discord Webhooks",
-    description: "Post formatted alerts and reports to Discord channels via webhook integration.",
+    name: "Webhooks Discord",
+    description: "Publique alertas e relatórios formatados em canais do Discord via integração com webhook.",
     version: "1.0.3",
     author: "Community",
     category: "notification",
@@ -148,13 +148,13 @@ const pluginCatalog: MarketplacePlugin[] = [
     lastUpdated: "2025-10-12T00:00:00Z",
     documentation: "https://discord.com/developers/docs/resources/webhook",
     configSchema: {
-      endpoint: { type: "string", required: true, description: "Discord webhook URL" },
+      endpoint: { type: "string", required: true, description: "URL do webhook Discord" },
     },
   },
   {
     id: "PLUGIN-SLACK",
-    name: "Slack Integration",
-    description: "Rich message notifications to Slack workspaces. Supports threads, attachments, and interactive messages.",
+    name: "Integração Slack",
+    description: "Notificações de mensagens ricas para workspaces do Slack. Suporta threads, anexos e mensagens interativas.",
     version: "2.0.1",
     author: "Community",
     category: "notification",
@@ -164,14 +164,14 @@ const pluginCatalog: MarketplacePlugin[] = [
     lastUpdated: "2025-11-22T00:00:00Z",
     documentation: "https://api.slack.com/messaging/webhooks",
     configSchema: {
-      endpoint: { type: "string", required: true, description: "Slack webhook URL" },
+      endpoint: { type: "string", required: true, description: "URL do webhook Slack" },
       headers: { type: "object", default: {} },
     },
   },
   {
     id: "PLUGIN-EMAIL-SMTP",
-    name: "Email SMTP",
-    description: "Send email alerts and reports via SMTP. Supports HTML templates and attachment delivery.",
+    name: "E-mail SMTP",
+    description: "Envie alertas e relatórios por e-mail via SMTP. Suporta templates HTML e envio de anexos.",
     version: "1.1.0",
     author: "Community",
     category: "notification",
@@ -181,15 +181,15 @@ const pluginCatalog: MarketplacePlugin[] = [
     lastUpdated: "2025-08-18T00:00:00Z",
     documentation: "https://nodemailer.com/about/",
     configSchema: {
-      endpoint: { type: "string", required: true, description: "SMTP host" },
-      apiKey: { type: "string", description: "SMTP password" },
+      endpoint: { type: "string", required: true, description: "Host SMTP" },
+      apiKey: { type: "string", description: "Senha SMTP" },
       headers: { type: "object", default: { port: "587", secure: "false" } },
     },
   },
   {
     id: "PLUGIN-PDF-EXPORT",
-    name: "PDF Report Generator",
-    description: "Generate formatted PDF intelligence reports with charts, maps, and executive summaries.",
+    name: "Gerador de Relatórios PDF",
+    description: "Gere relatórios de inteligência formatados em PDF com gráficos, mapas e resumos executivos.",
     version: "1.3.0",
     author: "Platform",
     category: "export",
@@ -204,8 +204,8 @@ const pluginCatalog: MarketplacePlugin[] = [
   },
   {
     id: "PLUGIN-CSV-EXPORT",
-    name: "CSV Data Export",
-    description: "Export event data, alerts, and analytics to CSV format for external analysis.",
+    name: "Exportação de Dados CSV",
+    description: "Exporte dados de eventos, alertas e análises em formato CSV para análise externa.",
     version: "1.0.0",
     author: "Platform",
     category: "export",
@@ -218,8 +218,8 @@ const pluginCatalog: MarketplacePlugin[] = [
   },
   {
     id: "PLUGIN-GRAFANA",
-    name: "Grafana Dashboard",
-    description: "Visualize platform data in Grafana dashboards. Provides pre-built panels for alerts, events, and KPIs.",
+    name: "Painel Grafana",
+    description: "Visualize dados da plataforma em painéis do Grafana. Fornece painéis pré-construídos para alertas, eventos e KPIs.",
     version: "2.1.0",
     author: "Community",
     category: "visualization",
@@ -229,14 +229,14 @@ const pluginCatalog: MarketplacePlugin[] = [
     lastUpdated: "2025-11-28T00:00:00Z",
     documentation: "https://grafana.com/docs/grafana/latest/",
     configSchema: {
-      endpoint: { type: "string", required: true, description: "Grafana instance URL" },
+      endpoint: { type: "string", required: true, description: "URL da instância Grafana" },
       apiKey: { type: "string", required: true },
     },
   },
   {
     id: "PLUGIN-MAPBOX",
-    name: "Mapbox Tiles",
-    description: "High-quality map tiles for geospatial visualization. Satellite, streets, terrain, and dark styles.",
+    name: "Tiles Mapbox",
+    description: "Tiles de mapa de alta qualidade para visualização geoespacial. Estilos de satélite, ruas, terreno e escuro.",
     version: "1.4.2",
     author: "Mapbox",
     category: "visualization",
@@ -246,13 +246,13 @@ const pluginCatalog: MarketplacePlugin[] = [
     lastUpdated: "2025-12-10T00:00:00Z",
     documentation: "https://docs.mapbox.com/api/maps/tiles/",
     configSchema: {
-      apiKey: { type: "string", required: true, description: "Mapbox access token" },
+      apiKey: { type: "string", required: true, description: "Token de acesso Mapbox" },
       endpoint: { type: "string", default: "https://api.mapbox.com" },
     },
   },
 ];
 
-// ─── MARKETPLACE FUNCTIONS ─────────────────────────────────
+// ─── FUNÇÕES DO MARKETPLACE ────────────────────────────────
 
 export function registerConnector(connector: Connector): void {
   connectors.set(connector.id, connector);
@@ -274,7 +274,7 @@ export function listConnectors(category?: string): Connector[] {
 export function installPlugin(pluginId: string, config: ConnectorConfig): Connector {
   const plugin = pluginCatalog.find((p) => p.id === pluginId);
   if (!plugin) {
-    throw new Error(`Plugin not found: ${pluginId}`);
+    throw new Error(`Plugin não encontrado: ${pluginId}`);
   }
 
   const connector: Connector = {

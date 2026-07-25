@@ -15,40 +15,40 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data: getAllCenters() });
 
       case "center": {
-        if (!centerId) return NextResponse.json({ success: false, error: "centerId is required" }, { status: 400 });
+        if (!centerId) return NextResponse.json({ success: false, error: "centerId é obrigatório" }, { status: 400 });
         const center = getOperationCenter(centerId);
-        if (!center) return NextResponse.json({ success: false, error: "Center not found" }, { status: 404 });
+        if (!center) return NextResponse.json({ success: false, error: "Centro não encontrado" }, { status: 404 });
         return NextResponse.json({ success: true, data: center });
       }
 
       case "dashboards": {
-        if (!centerId) return NextResponse.json({ success: false, error: "centerId is required" }, { status: 400 });
+        if (!centerId) return NextResponse.json({ success: false, error: "centerId é obrigatório" }, { status: 400 });
         return NextResponse.json({ success: true, data: getDashboards(centerId) });
       }
 
       case "operators": {
-        if (!centerId) return NextResponse.json({ success: false, error: "centerId is required" }, { status: 400 });
+        if (!centerId) return NextResponse.json({ success: false, error: "centerId é obrigatório" }, { status: 400 });
         return NextResponse.json({ success: true, data: getOperators(centerId) });
       }
 
       case "communications": {
-        if (!centerId) return NextResponse.json({ success: false, error: "centerId is required" }, { status: 400 });
+        if (!centerId) return NextResponse.json({ success: false, error: "centerId é obrigatório" }, { status: 400 });
         const limit = parseInt(url.searchParams.get("limit") || "50");
         return NextResponse.json({ success: true, data: getCommunications(centerId, limit) });
       }
 
       case "metrics": {
-        if (!centerId) return NextResponse.json({ success: false, error: "centerId is required" }, { status: 400 });
+        if (!centerId) return NextResponse.json({ success: false, error: "centerId é obrigatório" }, { status: 400 });
         const metrics = getCenterMetrics(centerId);
-        if (!metrics) return NextResponse.json({ success: false, error: "Metrics not found" }, { status: 404 });
+        if (!metrics) return NextResponse.json({ success: false, error: "Métricas não encontradas" }, { status: 404 });
         return NextResponse.json({ success: true, data: metrics });
       }
 
       default:
-        return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
+        return NextResponse.json({ success: false, error: "Ação desconhecida" }, { status: 400 });
     }
   } catch (err) {
-    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Erro interno" }, { status: 500 });
   }
 }
 
@@ -69,9 +69,9 @@ export async function POST(req: NextRequest) {
       }
 
       default:
-        return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
+        return NextResponse.json({ success: false, error: "Ação desconhecida" }, { status: 400 });
     }
   } catch (err) {
-    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Erro interno" }, { status: 500 });
   }
 }

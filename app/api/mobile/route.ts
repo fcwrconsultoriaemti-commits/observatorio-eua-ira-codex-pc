@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
       case "devices": {
         const userId = url.searchParams.get("userId");
-        if (!userId) return NextResponse.json({ success: false, error: "userId is required" }, { status: 400 });
+        if (!userId) return NextResponse.json({ success: false, error: "userId é obrigatório" }, { status: 400 });
         return NextResponse.json({ success: true, data: getDevicesByUser(userId) });
       }
 
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
       case "version": {
         const version = url.searchParams.get("version");
-        if (!version) return NextResponse.json({ success: false, error: "version is required" }, { status: 400 });
+        if (!version) return NextResponse.json({ success: false, error: "versão é obrigatória" }, { status: 400 });
         return NextResponse.json({ success: true, data: checkVersionCompatibility(version) });
       }
 
@@ -34,10 +34,10 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data: getMobileDashboard() });
 
       default:
-        return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
+        return NextResponse.json({ success: false, error: "Ação desconhecida" }, { status: 400 });
     }
   } catch (err) {
-    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Erro interno" }, { status: 500 });
   }
 }
 
@@ -54,9 +54,9 @@ export async function POST(req: NextRequest) {
 
       case "unregister": {
         const deviceId = body.deviceId as string;
-        if (!deviceId) return NextResponse.json({ success: false, error: "deviceId is required" }, { status: 400 });
+        if (!deviceId) return NextResponse.json({ success: false, error: "deviceId é obrigatório" }, { status: 400 });
         const result = unregisterDevice(deviceId);
-        if (!result) return NextResponse.json({ success: false, error: "Device not found" }, { status: 404 });
+        if (!result) return NextResponse.json({ success: false, error: "Dispositivo não encontrado" }, { status: 404 });
         return NextResponse.json({ success: true, data: { unregistered: true } });
       }
 
@@ -71,9 +71,9 @@ export async function POST(req: NextRequest) {
       }
 
       default:
-        return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
+        return NextResponse.json({ success: false, error: "Ação desconhecida" }, { status: 400 });
     }
   } catch (err) {
-    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Erro interno" }, { status: 500 });
   }
 }

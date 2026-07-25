@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json() as { question: string };
     if (!body.question) {
-      return NextResponse.json({ error: "Question is required" }, { status: 400 });
+      return NextResponse.json({ error: "Pergunta é obrigatória" }, { status: 400 });
     }
 
     const events = getEvents({ limit: 500 });
@@ -43,6 +43,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ data: response });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Erro interno" }, { status: 500 });
   }
 }

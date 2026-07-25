@@ -45,19 +45,19 @@ export interface SectorAlert {
 const sectorProfiles: Record<SectorType, SectorProfile> = {
   energy: {
     id: "SEC-ENERGY",
-    name: "Energy Sector Intelligence",
+    name: "Inteligência do Setor de Energia",
     type: "energy",
-    description: "Power plants, refineries, pipelines, grid infrastructure, outages, and energy supply chain monitoring.",
+    description: "Usinas, refinarias, dutos, infraestrutura de rede, interrupções e monitoramento da cadeia de suprimentos de energia.",
     relevantCategories: ["energia", "infraestrutura", "clima_severo", "incendio", "cibernetico"],
     kpis: [],
     dashboards: [
       {
         id: "energy-overview",
-        title: "Energy Infrastructure Overview",
+        title: "Visão Geral da Infraestrutura de Energia",
         panels: [
-          { type: "map", title: "Critical Infrastructure Map", config: { layers: ["power_plants", "pipelines", "substations"] } },
-          { type: "chart", title: "Grid Load Distribution", config: { aggregation: "region" } },
-          { type: "gauge", title: "System Reliability Index", config: { threshold: 99.5 } },
+          { type: "map", title: "Mapa de Infraestrutura Crítica", config: { layers: ["power_plants", "pipelines", "substations"] } },
+          { type: "chart", title: "Distribuição de Carga da Rede", config: { aggregation: "region" } },
+          { type: "gauge", title: "Índice de Confiabilidade do Sistema", config: { threshold: 99.5 } },
         ],
       },
     ],
@@ -65,19 +65,19 @@ const sectorProfiles: Record<SectorType, SectorProfile> = {
   },
   logistics: {
     id: "SEC-LOGISTICS",
-    name: "Logistics Sector Intelligence",
+    name: "Inteligência do Setor de Logística",
     type: "logistics",
-    description: "Ports, airports, highways, railways, and global supply chain monitoring.",
+    description: "Portos, aeroportos, rodovias, ferrovias e monitoramento da cadeia de suprimentos global.",
     relevantCategories: ["maritimo", "aereo", "infraestrutura", "clima_severo", "economico"],
     kpis: [],
     dashboards: [
       {
         id: "logistics-overview",
-        title: "Logistics Operations Dashboard",
+        title: "Painel de Operações de Logística",
         panels: [
-          { type: "map", title: "Active Transport Routes", config: { modes: ["sea", "air", "road", "rail"] } },
-          { type: "table", title: "Port Congestion Index", config: { sortBy: "waitTime" } },
-          { type: "chart", title: "Supply Chain Risk Trend", config: { period: "7d" } },
+          { type: "map", title: "Rotas de Transporte Ativas", config: { modes: ["sea", "air", "road", "rail"] } },
+          { type: "table", title: "Índice de Congestionamento Portuário", config: { sortBy: "waitTime" } },
+          { type: "chart", title: "Tendência de Risco na Cadeia de Suprimentos", config: { period: "7d" } },
         ],
       },
     ],
@@ -85,19 +85,19 @@ const sectorProfiles: Record<SectorType, SectorProfile> = {
   },
   health: {
     id: "SEC-HEALTH",
-    name: "Health Sector Intelligence",
+    name: "Inteligência do Setor de Saúde",
     type: "health",
-    description: "Epidemic monitoring, air quality, hospital capacity, and disease outbreak tracking.",
+    description: "Monitoramento de epidemias, qualidade do ar, capacidade hospitalar e rastreamento de surtos de doenças.",
     relevantCategories: ["saude", "clima_severo", "incendio", "infraestrutura"],
     kpis: [],
     dashboards: [
       {
         id: "health-overview",
-        title: "Public Health Monitoring",
+        title: "Monitoramento de Saúde Pública",
         panels: [
-          { type: "map", title: "Disease Outbreak Zones", config: { sources: ["WHO", "CDC", "local"] } },
-          { type: "chart", title: "Air Quality Index Trends", config: { pollutants: ["PM2.5", "NO2", "O3"] } },
-          { type: "gauge", title: "Hospital Bed Occupancy", config: { regions: "all" } },
+          { type: "map", title: "Zonas de Surto de Doenças", config: { sources: ["WHO", "CDC", "local"] } },
+          { type: "chart", title: "Tendências do Índice de Qualidade do Ar", config: { pollutants: ["PM2.5", "NO2", "O3"] } },
+          { type: "gauge", title: "Ocupação de Leitos Hospitalares", config: { regions: "all" } },
         ],
       },
     ],
@@ -105,19 +105,19 @@ const sectorProfiles: Record<SectorType, SectorProfile> = {
   },
   defense: {
     id: "SEC-DEFENSE",
-    name: "Defense Sector Intelligence",
+    name: "Inteligência do Setor de Defesa",
     type: "defense",
-    description: "Military movements, border security, conflict zones, and geopolitical threat monitoring.",
+    description: "Movimentações militares, segurança de fronteiras, zonas de conflito e monitoramento de ameaças geopolíticas.",
     relevantCategories: ["conflito", "cibernetico", "neo", "satelite", "infraestrutura"],
     kpis: [],
     dashboards: [
       {
         id: "defense-overview",
-        title: "Defense & Security Operations",
+        title: "Operações de Defesa e Segurança",
         panels: [
-          { type: "map", title: "Conflict Zone Monitoring", config: { sources: ["ACLED", "satellite"] } },
-          { type: "table", title: "Border Incident Log", config: { filters: ["severity", "type"] } },
-          { type: "timeline", title: "Military Movement Timeline", config: { actors: "all" } },
+          { type: "map", title: "Monitoramento de Zonas de Conflito", config: { sources: ["ACLED", "satellite"] } },
+          { type: "table", title: "Registro de Incidentes de Fronteira", config: { filters: ["severity", "type"] } },
+          { type: "timeline", title: "Linha do Tempo de Movimentações Militares", config: { actors: "all" } },
         ],
       },
     ],
@@ -125,19 +125,19 @@ const sectorProfiles: Record<SectorType, SectorProfile> = {
   },
   finance: {
     id: "SEC-FINANCE",
-    name: "Financial Sector Intelligence",
+    name: "Inteligência do Setor Financeiro",
     type: "finance",
-    description: "Market volatility, oil prices, currency fluctuations, commodities, and economic risk analysis.",
+    description: "Volatilidade de mercado, preços de petróleo, flutuações cambiais, commodities e análise de risco econômico.",
     relevantCategories: ["economico", "cibernetico", "neo", "maritimo", "infraestrutura"],
     kpis: [],
     dashboards: [
       {
         id: "finance-overview",
-        title: "Financial Risk Dashboard",
+        title: "Painel de Risco Financeiro",
         panels: [
-          { type: "chart", title: "Market Volatility Index", config: { indices: ["VIX", "S&P500", "IBOV"] } },
-          { type: "gauge", title: "Oil Price Tracker", config: { benchmarks: ["WTI", "Brent", "Dubai"] } },
-          { type: "table", title: "Currency Exchange Rates", config: { pairs: ["USD/BRL", "EUR/BRL", "CNY/BRL"] } },
+          { type: "chart", title: "Índice de Volatilidade do Mercado", config: { indices: ["VIX", "S&P500", "IBOV"] } },
+          { type: "gauge", title: "Monitor de Preços de Petróleo", config: { benchmarks: ["WTI", "Brent", "Dubai"] } },
+          { type: "table", title: "Taxas de Câmbio", config: { pairs: ["USD/BRL", "EUR/BRL", "CNY/BRL"] } },
         ],
       },
     ],
@@ -145,19 +145,19 @@ const sectorProfiles: Record<SectorType, SectorProfile> = {
   },
   telecom: {
     id: "SEC-TELECOM",
-    name: "Telecom Sector Intelligence",
+    name: "Inteligência do Setor de Telecomunicações",
     type: "telecom",
-    description: "Network outages, cyber attacks, satellite communications, and fiber infrastructure monitoring.",
+    description: "Interrupções de rede, ataques cibernéticos, comunicações por satélite e monitoramento de infraestrutura de fibra.",
     relevantCategories: ["cibernetico", "infraestrutura", "satelite", "neo"],
     kpis: [],
     dashboards: [
       {
         id: "telecom-overview",
-        title: "Telecom Infrastructure Monitor",
+        title: "Monitor de Infraestrutura de Telecomunicações",
         panels: [
-          { type: "map", title: "Network Status Map", config: { providers: "all" } },
-          { type: "chart", title: "Cyber Attack Attempts", config: { period: "24h" } },
-          { type: "table", title: "Satellite Coverage Status", config: { constellation: "all" } },
+          { type: "map", title: "Mapa de Status da Rede", config: { providers: "all" } },
+          { type: "chart", title: "Tentativas de Ataque Cibernético", config: { period: "24h" } },
+          { type: "table", title: "Status de Cobertura por Satélite", config: { constellation: "all" } },
         ],
       },
     ],
@@ -165,19 +165,19 @@ const sectorProfiles: Record<SectorType, SectorProfile> = {
   },
   agriculture: {
     id: "SEC-AGRICULTURE",
-    name: "Agriculture Sector Intelligence",
+    name: "Inteligência do Setor Agrícola",
     type: "agriculture",
-    description: "Crop monitoring, drought tracking, commodity prices, and food security analysis.",
+    description: "Monitoramento de culturas, rastreamento de secas, preços de commodities e análise de segurança alimentar.",
     relevantCategories: ["clima_severo", "seca", "enchente", "economico", "incendio"],
     kpis: [],
     dashboards: [
       {
         id: "agriculture-overview",
-        title: "Agricultural Intelligence Dashboard",
+        title: "Painel de Inteligência Agrícola",
         panels: [
-          { type: "map", title: "Crop Health Satellite View", config: { indices: ["NDVI", "EVI"] } },
-          { type: "chart", title: "Precipitation vs Normal", config: { period: "30d" } },
-          { type: "gauge", title: "Food Security Index", config: { regions: "global" } },
+          { type: "map", title: "Visão Satelital da Saúde das Culturas", config: { indices: ["NDVI", "EVI"] } },
+          { type: "chart", title: "Precipitação vs Normal", config: { period: "30d" } },
+          { type: "gauge", title: "Índice de Segurança Alimentar", config: { regions: "global" } },
         ],
       },
     ],
@@ -185,19 +185,19 @@ const sectorProfiles: Record<SectorType, SectorProfile> = {
   },
   manufacturing: {
     id: "SEC-MANUFACTURING",
-    name: "Manufacturing Sector Intelligence",
+    name: "Inteligência do Setor de Manufatura",
     type: "manufacturing",
-    description: "Industrial production, supply chain disruptions, raw material availability, and factory monitoring.",
+    description: "Produção industrial, interrupções na cadeia de suprimentos, disponibilidade de matérias-primas e monitoramento de fábricas.",
     relevantCategories: ["infraestrutura", "economico", "cibernetico", "logistics", "clima_severo"],
     kpis: [],
     dashboards: [
       {
         id: "manufacturing-overview",
-        title: "Manufacturing Operations Monitor",
+        title: "Monitor de Operações de Manufatura",
         panels: [
-          { type: "map", title: "Industrial Facility Map", config: { sectors: "all" } },
-          { type: "chart", title: "Raw Material Price Trends", config: { commodities: ["steel", "aluminum", "copper", "lithium"] } },
-          { type: "table", title: "Supply Chain Disruption Log", config: { severity: "all" } },
+          { type: "map", title: "Mapa de Instalações Industriais", config: { sectors: "all" } },
+          { type: "chart", title: "Tendências de Preços de Matérias-Primas", config: { commodities: ["steel", "aluminum", "copper", "lithium"] } },
+          { type: "table", title: "Registro de Interrupções na Cadeia de Suprimentos", config: { severity: "all" } },
         ],
       },
     ],
@@ -245,37 +245,37 @@ export function getSectorKPIs(type: SectorType, events: GlobalEvent[]): SectorKP
 
   return [
     {
-      name: "Total Events",
+      name: "Total de Eventos",
       value: String(totalEvents),
-      unit: "events",
+      unit: "eventos",
       trend: trendUp ? "up" : trendDown ? "down" : "stable",
       status: totalEvents > 100 ? "warning" : "normal",
     },
     {
-      name: "Critical Events",
+      name: "Eventos Críticos",
       value: String(criticalEvents),
-      unit: "events",
+      unit: "eventos",
       trend: "stable",
       status: criticalEvents > 10 ? "critical" : criticalEvents > 5 ? "warning" : "normal",
     },
     {
-      name: "Moderate+ Events",
+      name: "Eventos Moderados+",
       value: String(moderateEvents),
-      unit: "events",
+      unit: "eventos",
       trend: trendUp ? "up" : trendDown ? "down" : "stable",
       status: moderateEvents > 30 ? "warning" : "normal",
     },
     {
-      name: "Avg Impact Score",
+      name: "Pontuação Média de Impacto",
       value: avgImpact.toFixed(1),
-      unit: "score",
+      unit: "pontuação",
       trend: "stable",
       status: avgImpact > 70 ? "critical" : avgImpact > 40 ? "warning" : "normal",
     },
     {
-      name: "24h Event Volume",
+      name: "Volume de Eventos em 24h",
       value: String(recentEvents),
-      unit: "events",
+      unit: "eventos",
       trend: trendUp ? "up" : trendDown ? "down" : "stable",
       status: recentEvents > 20 ? "warning" : "normal",
     },
@@ -310,19 +310,19 @@ export function generateSectorReport(
     ? sectorEvents.reduce((sum, e) => sum + e.confidence, 0) / sectorEvents.length
     : 0;
 
-  const summary = `${profile.name} Report: Analyzed ${sectorEvents.length} events across categories [${profile.relevantCategories.join(", ")}]. ${criticalCount} critical events detected. Average confidence: ${(avgConfidence * 100).toFixed(1)}%.`;
+  const summary = `Relatório ${profile.name}: Analisados ${sectorEvents.length} eventos nas categorias [${profile.relevantCategories.join(", ")}]. ${criticalCount} eventos críticos detectados. Confiança média: ${(avgConfidence * 100).toFixed(1)}%.`;
 
   const risks: string[] = [];
-  if (criticalCount > 5) risks.push("High volume of critical events requires immediate attention.");
-  if (kpis.some((k) => k.status === "critical")) risks.push("One or more KPIs in critical status.");
-  if (avgConfidence < 0.6) risks.push("Low average confidence in event data - verify sources.");
-  if (sectorEvents.length > 100) risks.push("Elevated event volume may indicate cascading risk scenarios.");
+  if (criticalCount > 5) risks.push("Alto volume de eventos críticos requer atenção imediata.");
+  if (kpis.some((k) => k.status === "critical")) risks.push("Um ou mais KPIs em estado crítico.");
+  if (avgConfidence < 0.6) risks.push("Baixa confiança média nos dados de eventos - verificar fontes.");
+  if (sectorEvents.length > 100) risks.push("Volume elevado de eventos pode indicar cenários de risco em cascata.");
 
   const recommendations: string[] = [];
-  if (criticalCount > 0) recommendations.push("Prioritize response to critical events in this sector.");
-  recommendations.push("Review and update sector-specific monitoring thresholds.");
-  recommendations.push("Cross-reference events with other sectors for cascade analysis.");
-  if (avgConfidence < 0.7) recommendations.push("Increase validation of incoming data sources.");
+  if (criticalCount > 0) recommendations.push("Priorizar resposta a eventos críticos neste setor.");
+  recommendations.push("Revisar e atualizar limites de monitoramento específicos do setor.");
+  recommendations.push("Referenciar cruzadamente eventos com outros setores para análise de cascata.");
+  if (avgConfidence < 0.7) recommendations.push("Aumentar a validação de fontes de dados recebidas.");
 
   return { summary, risks, recommendations };
 }

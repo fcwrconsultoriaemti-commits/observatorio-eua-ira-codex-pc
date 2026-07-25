@@ -114,7 +114,7 @@ export async function GET(req: Request) {
       }
       default:
         return NextResponse.json({
-          error: "Endpoint not found",
+          error: "Endpoint não encontrado",
           availableEndpoints: [
             "GET /api/public/events",
             "GET /api/public/alerts",
@@ -127,6 +127,6 @@ export async function GET(req: Request) {
         }, { status: 404 });
     }
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Erro interno" }, { status: 500 });
   }
 }

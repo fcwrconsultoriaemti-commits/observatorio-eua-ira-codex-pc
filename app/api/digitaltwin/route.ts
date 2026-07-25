@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
       case "features": {
         const layerId = url.searchParams.get("layerId");
-        if (!layerId) return NextResponse.json({ success: false, error: "layerId is required" }, { status: 400 });
+        if (!layerId) return NextResponse.json({ success: false, error: "layerId é obrigatório" }, { status: 400 });
         return NextResponse.json({ success: true, data: getFeaturesForLayer(layerId) });
       }
 
@@ -37,14 +37,14 @@ export async function GET(req: NextRequest) {
 
       case "search": {
         const query = url.searchParams.get("q");
-        if (!query) return NextResponse.json({ success: false, error: "q is required" }, { status: 400 });
+        if (!query) return NextResponse.json({ success: false, error: "q é obrigatório" }, { status: 400 });
         return NextResponse.json({ success: true, data: searchFeatures(query) });
       }
 
       default:
-        return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
+        return NextResponse.json({ success: false, error: "Ação desconhecida" }, { status: 400 });
     }
   } catch (err) {
-    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Erro interno" }, { status: 500 });
   }
 }

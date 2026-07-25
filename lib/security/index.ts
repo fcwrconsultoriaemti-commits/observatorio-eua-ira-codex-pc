@@ -1,5 +1,5 @@
 // ============================================================
-// SECURITY & COMPLIANCE — RBAC / MFA / LGPD / Audit
+// SEGURANÇA E CONFORMIDADE — RBAC / MFA / LGPD / Auditoria
 // ============================================================
 
 export type Permission = "read" | "write" | "admin" | "alert" | "mission" | "report" | "api" | "audit" | "export";
@@ -55,11 +55,11 @@ export interface ComplianceReport {
   score: number;
 }
 
-// ─── DEFAULT SECURITY POLICY ───────────────────────────────
+// ─── POLÍTICA DE SEGURANÇA PADRÃO ──────────────────────────
 
 const defaultPolicy: SecurityPolicy = {
   id: "POL-DEFAULT",
-  name: "Default Security Policy",
+  name: "Política de Segurança Padrão",
   mfaRequired: true,
   sessionTimeout: 30,
   maxLoginAttempts: 5,
@@ -75,52 +75,52 @@ const defaultPolicy: SecurityPolicy = {
   auditRetention: 365,
 };
 
-// ─── ROLE PERMISSIONS MAP ──────────────────────────────────
+// ─── MAPA DE PERMISSÕES DE FUNÇÃO ──────────────────────────
 
 const rolePermissions: RolePermission[] = [
   {
     role: "super_admin",
     permissions: ["read", "write", "admin", "alert", "mission", "report", "api", "audit", "export"],
-    description: "Full system access. Manages all roles, policies, and system configuration.",
+    description: "Acesso total ao sistema. Gerencia todas as funções, políticas e configuração do sistema.",
   },
   {
     role: "admin",
     permissions: ["read", "write", "admin", "alert", "mission", "report", "api", "audit"],
-    description: "Administrative access. Manages users, roles, alerts, and audit logs. Cannot export.",
+    description: "Acesso administrativo. Gerencia usuários, funções, alertas e logs de auditoria. Não pode exportar.",
   },
   {
     role: "commander",
     permissions: ["read", "write", "alert", "mission", "report"],
-    description: "Operational command. Creates missions, manages alerts, and generates reports.",
+    description: "Comando operacional. Cria missões, gerencia alertas e gera relatórios.",
   },
   {
     role: "analyst",
     permissions: ["read", "write", "report"],
-    description: "Intelligence analysis. Reads/writes data and generates analytical reports.",
+    description: "Análise de inteligência. Lê/escreve dados e gera relatórios analíticos.",
   },
   {
     role: "operator",
     permissions: ["read", "alert", "mission"],
-    description: "Field operations. Reads data, triggers alerts, and participates in missions.",
+    description: "Operações de campo. Lê dados, dispara alertas e participa de missões.",
   },
   {
     role: "viewer",
     permissions: ["read"],
-    description: "Read-only access. Views dashboards, reports, and alerts.",
+    description: "Acesso somente leitura. Visualiza painéis, relatórios e alertas.",
   },
   {
     role: "api_user",
     permissions: ["read", "api"],
-    description: "Programmatic access. Reads data via API. No write or alert capabilities.",
+    description: "Acesso programático. Lê dados via API. Sem capacidades de escrita ou alerta.",
   },
 ];
 
-// ─── IN-MEMORY AUDIT LOG ──────────────────────────────────
+// ─── LOG DE AUDITORIA EM MEMÓRIA ───────────────────────────
 
 const auditLog: AuditEntry[] = [];
 let auditCounter = 0;
 
-// ─── SECURITY FUNCTIONS ────────────────────────────────────
+// ─── FUNÇÕES DE SEGURANÇA ──────────────────────────────────
 
 export function getSecurityPolicy(): SecurityPolicy {
   return { ...defaultPolicy };
@@ -194,73 +194,73 @@ export function generateComplianceReport(type: "lgpd" | "soc2" | "iso27001" | "c
 
   const findings: ComplianceReport["findings"] = [];
 
-  // Encryption at rest
+  // Criptografia em repouso
   findings.push({
-    category: "Encryption at Rest",
+    category: "Criptografia em Repouso",
     status: policy.encryptionAtRest ? "compliant" : "non_compliant",
-    details: policy.encryptionAtRest ? "Data encryption at rest is enabled." : "Data encryption at rest is disabled.",
+    details: policy.encryptionAtRest ? "Criptografia de dados em repouso está habilitada." : "Criptografia de dados em repouso está desabilitada.",
   });
 
-  // Encryption in transit
+  // Criptografia em trânsito
   findings.push({
-    category: "Encryption in Transit",
+    category: "Criptografia em Trânsito",
     status: policy.encryptionInTransit ? "compliant" : "non_compliant",
-    details: policy.encryptionInTransit ? "TLS/SSL is enforced for all connections." : "Unencrypted connections may be allowed.",
+    details: policy.encryptionInTransit ? "TLS/SSL é obrigatório para todas as conexões." : "Conexões não criptografadas podem ser permitidas.",
   });
 
   // MFA
   findings.push({
-    category: "Multi-Factor Authentication",
+    category: "Autenticação Multifator",
     status: policy.mfaRequired ? "compliant" : "non_compliant",
-    details: policy.mfaRequired ? "MFA is required for all users." : "MFA is not enforced.",
+    details: policy.mfaRequired ? "MFA é obrigatório para todos os usuários." : "MFA não é obrigatório.",
   });
 
-  // Password Policy
+  // Política de Senha
   const pp = policy.passwordPolicy;
   const passwordCompliant = pp.minLength >= 12 && pp.requireUppercase && pp.requireNumbers && pp.requireSpecial;
   findings.push({
-    category: "Password Policy",
+    category: "Política de Senha",
     status: passwordCompliant ? "compliant" : "partial",
-    details: `Minimum length: ${pp.minLength}. Uppercase: ${pp.requireUppercase}. Numbers: ${pp.requireNumbers}. Special: ${pp.requireSpecial}.`,
+    details: `Comprimento mínimo: ${pp.minLength}. Maiúsculas: ${pp.requireUppercase}. Números: ${pp.requireNumbers}. Especiais: ${pp.requireSpecial}.`,
   });
 
-  // Session Timeout
+  // Gerenciamento de Sessão
   findings.push({
-    category: "Session Management",
+    category: "Gerenciamento de Sessão",
     status: policy.sessionTimeout <= 60 ? "compliant" : "partial",
-    details: `Session timeout set to ${policy.sessionTimeout} minutes.`,
+    details: `Tempo limite de sessão definido para ${policy.sessionTimeout} minutos.`,
   });
 
-  // Audit Retention
+  // Retenção de Auditoria
   findings.push({
-    category: "Audit Log Retention",
+    category: "Retenção de Logs de Auditoria",
     status: policy.auditRetention >= 90 ? "compliant" : "partial",
-    details: `Audit logs retained for ${policy.auditRetention} days.`,
+    details: `Logs de auditoria retidos por ${policy.auditRetention} dias.`,
   });
 
-  // Login Attempts
+  // Tentativas de Login
   findings.push({
-    category: "Account Lockout",
+    category: "Bloqueio de Conta",
     status: policy.maxLoginAttempts <= 10 ? "compliant" : "non_compliant",
-    details: `Account locks after ${policy.maxLoginAttempts} failed login attempts.`,
+    details: `Conta é bloqueada após ${policy.maxLoginAttempts} tentativas de login falhas.`,
   });
 
-  // Calculate score
+  // Calcular pontuação
   const compliantCount = findings.filter((f) => f.status === "compliant").length;
   const partialCount = findings.filter((f) => f.status === "partial").length;
   const score = Math.round(((compliantCount + partialCount * 0.5) / findings.length) * 100);
 
-  // Type-specific additions
+  // Adições específicas por tipo
   if (type === "lgpd") {
     findings.push({
-      category: "Data Subject Rights",
+      category: "Direitos do Titular dos Dados",
       status: "compliant",
-      details: "Data export and deletion capabilities are available via API.",
+      details: "Capacidades de exportação e exclusão de dados estão disponíveis via API.",
     });
     findings.push({
-      category: "Data Processing Consent",
+      category: "Consentimento de Processamento de Dados",
       status: "partial",
-      details: "Consent tracking is implemented but requires periodic re-validation.",
+      details: "Rastreamento de consentimento está implementado, mas requer revalidação periódica.",
     });
   }
 
@@ -279,24 +279,24 @@ export function validatePassword(password: string): { valid: boolean; errors: st
   const errors: string[] = [];
 
   if (password.length < policy.minLength) {
-    errors.push(`Password must be at least ${policy.minLength} characters long.`);
+    errors.push(`A senha deve ter pelo menos ${policy.minLength} caracteres.`);
   }
   if (policy.requireUppercase && !/[A-Z]/.test(password)) {
-    errors.push("Password must contain at least one uppercase letter.");
+    errors.push("A senha deve conter pelo menos uma letra maiúscula.");
   }
   if (policy.requireNumbers && !/[0-9]/.test(password)) {
-    errors.push("Password must contain at least one number.");
+    errors.push("A senha deve conter pelo menos um número.");
   }
   if (policy.requireSpecial && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    errors.push("Password must contain at least one special character.");
+    errors.push("A senha deve conter pelo menos um caractere especial.");
   }
 
   return { valid: errors.length === 0, errors };
 }
 
 export function validateMFASetup(userId: string): { configured: boolean; backupCodes: number } {
-  // In production, this would check a real MFA provider
-  // For now, return a simulated response
+  // Em produção, isso verificaria um provedor MFA real
+  // Por enquanto, retorna uma resposta simulada
   const hasMFA = auditLog.some(
     (e) => e.userId === userId && e.action === "mfa_setup" && e.result === "success"
   );

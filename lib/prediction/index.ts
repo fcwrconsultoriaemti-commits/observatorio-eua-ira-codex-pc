@@ -31,14 +31,14 @@ export interface PredictionModel {
 // ─── MODELS ────────────────────────────────────────────────
 
 const MODELS: PredictionModel[] = [
-  { name: "Earthquake Pattern Model", category: "terremoto", version: "1.0", accuracy: 0.35, lastTrained: "2026-01-01" },
-  { name: "Wildfire Spread Model", category: "incendio", version: "1.0", accuracy: 0.65, lastTrained: "2026-01-01" },
-  { name: "Hurricane Track Model", category: "furacao", version: "1.0", accuracy: 0.70, lastTrained: "2026-01-01" },
-  { name: "Flood Risk Model", category: "enchente", version: "1.0", accuracy: 0.60, lastTrained: "2026-01-01" },
-  { name: "Crisis Escalation Model", category: "conflito", version: "1.0", accuracy: 0.45, lastTrained: "2026-01-01" },
-  { name: "Cyber Threat Model", category: "cibernetico", version: "1.0", accuracy: 0.40, lastTrained: "2026-01-01" },
-  { name: "Logistics Disruption Model", category: "maritimo", version: "1.0", accuracy: 0.55, lastTrained: "2026-01-01" },
-  { name: "Economic Volatility Model", category: "economico", version: "1.0", accuracy: 0.50, lastTrained: "2026-01-01" },
+  { name: "Modelo de Padrão Sísmico", category: "terremoto", version: "1.0", accuracy: 0.35, lastTrained: "2026-01-01" },
+  { name: "Modelo de Propagação de Incêndios", category: "incendio", version: "1.0", accuracy: 0.65, lastTrained: "2026-01-01" },
+  { name: "Modelo de Trajetória de Furacões", category: "furacao", version: "1.0", accuracy: 0.70, lastTrained: "2026-01-01" },
+  { name: "Modelo de Risco de Enchentes", category: "enchente", version: "1.0", accuracy: 0.60, lastTrained: "2026-01-01" },
+  { name: "Modelo de Escalada de Crises", category: "conflito", version: "1.0", accuracy: 0.45, lastTrained: "2026-01-01" },
+  { name: "Modelo de Ameaças Cibernéticas", category: "cibernetico", version: "1.0", accuracy: 0.40, lastTrained: "2026-01-01" },
+  { name: "Modelo de Interrupção Logística", category: "maritimo", version: "1.0", accuracy: 0.55, lastTrained: "2026-01-01" },
+  { name: "Modelo de Volatilidade Econômica", category: "economico", version: "1.0", accuracy: 0.50, lastTrained: "2026-01-01" },
 ];
 
 // ─── PREDICTION GENERATORS ─────────────────────────────────

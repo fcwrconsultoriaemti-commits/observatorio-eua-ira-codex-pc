@@ -76,8 +76,8 @@ const devices: MobileDevice[] = [
 const pushHistory: PushNotification[] = [
   {
     id: "notif-001",
-    title: "Wildfire Alert: California",
-    body: "New wildfire detected in Northern California. Evacuation orders may follow. Monitor local authorities.",
+    title: "Alerta de Incêndio: Califórnia",
+    body: "Novo incêndio detectado no norte da Califórnia. Ordens de evacuação podem ser emitidas. Monitore as autoridades locais.",
     data: { event_type: "wildfire", severity: "high", lat: 39.9, lng: -121.5, layer: "wildfires" },
     priority: "high",
     sound: true,
@@ -88,8 +88,8 @@ const pushHistory: PushNotification[] = [
   },
   {
     id: "notif-002",
-    title: "Infrastructure Update",
-    body: "Suez Canal transit volume has returned to normal. Supply chain disruption resolved.",
+    title: "Atualização de Infraestrutura",
+    body: "O volume de trânsito no Canal de Suez retornou ao normal. Interrupção na cadeia de suprimentos resolvida.",
     data: { event_type: "infrastructure", severity: "low", lat: 30.5, lng: 32.35, layer: "infrastructure" },
     priority: "normal",
     sound: false,
@@ -131,16 +131,16 @@ let mobileConfig: MobileConfig = {
   version: "2.4.1",
   minSupportedVersion: "2.2.0",
   features: [
-    { name: "push_notifications", enabled: true, platforms: ["ios", "android"] },
-    { name: "offline_mode", enabled: true, platforms: ["ios", "android"] },
-    { name: "background_sync", enabled: true, platforms: ["ios", "android"] },
-    { name: "camera_scanning", enabled: true, platforms: ["ios", "android"] },
-    { name: "ar_overlay", enabled: false, platforms: ["ios"] },
-    { name: "biometric_auth", enabled: true, platforms: ["ios", "android"] },
-    { name: "dark_mode", enabled: true, platforms: ["ios", "android"] },
-    { name: "location_sharing", enabled: true, platforms: ["ios", "android"] },
-    { name: "voice_commands", enabled: false, platforms: ["ios", "android"] },
-    { name: "wearable_support", enabled: false, platforms: ["ios", "android"] },
+    { name: "Notificações Push", enabled: true, platforms: ["ios", "android"] },
+    { name: "Modo Offline", enabled: true, platforms: ["ios", "android"] },
+    { name: "Sincronização em Segundo Plano", enabled: true, platforms: ["ios", "android"] },
+    { name: "Escaneamento por Câmera", enabled: true, platforms: ["ios", "android"] },
+    { name: "Sobreposição RA", enabled: false, platforms: ["ios"] },
+    { name: "Autenticação Biométrica", enabled: true, platforms: ["ios", "android"] },
+    { name: "Modo Escuro", enabled: true, platforms: ["ios", "android"] },
+    { name: "Compartilhamento de Localização", enabled: true, platforms: ["ios", "android"] },
+    { name: "Comandos de Voz", enabled: false, platforms: ["ios", "android"] },
+    { name: "Suporte a Wearables", enabled: false, platforms: ["ios", "android"] },
   ],
   maintenanceMode: false,
   forceUpdate: false,
@@ -246,15 +246,15 @@ export function checkVersionCompatibility(version: string): { compatible: boolea
   const isLatest = current[0] === latest[0] && current[1] === latest[1] && current[2] === latest[2];
 
   if (!isCompatible) {
-    return { compatible: false, forceUpdate: true, message: `Version ${version} is no longer supported. Please update to ${mobileConfig.version} or later.` };
+    return { compatible: false, forceUpdate: true, message: `A versão ${version} não é mais suportada. Por favor, atualize para ${mobileConfig.version} ou posterior.` };
   }
   if (mobileConfig.forceUpdate) {
-    return { compatible: true, forceUpdate: true, message: `A critical update is available. Please update to version ${mobileConfig.version}.` };
+    return { compatible: true, forceUpdate: true, message: `Uma atualização crítica está disponível. Por favor, atualize para a versão ${mobileConfig.version}.` };
   }
   if (!isLatest) {
-    return { compatible: true, forceUpdate: false, message: `Version ${version} is supported. Update to ${mobileConfig.version} for new features.` };
+    return { compatible: true, forceUpdate: false, message: `A versão ${version} é suportada. Atualize para ${mobileConfig.version} para obter novos recursos.` };
   }
-  return { compatible: true, forceUpdate: false, message: "Your app is up to date." };
+  return { compatible: true, forceUpdate: false, message: "Seu aplicativo está atualizado." };
 }
 
 export function getMobileDashboard(userId: string): { activeAlerts: number; activeMissions: number; recentEvents: number; unreadNotifications: number } {
