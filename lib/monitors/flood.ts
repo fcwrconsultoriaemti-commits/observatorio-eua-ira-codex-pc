@@ -1,4 +1,4 @@
-import type { GlobalEvent, MonitorModule } from "../../lib/types";
+import type { GlobalEvent, MonitorModule } from "../types";
 
 const USGS_WATER = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=*&parameterCd=00065,00060&siteStatus=all";
 const TIMEOUT_MS = 15_000;

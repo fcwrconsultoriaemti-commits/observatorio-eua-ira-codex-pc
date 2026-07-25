@@ -1,4 +1,4 @@
-import type { GlobalEvent, MonitorModule } from "../../lib/types";
+import type { GlobalEvent, MonitorModule } from "../types";
 
 const DROUGHT_API = "https://usdmdataservices.unl.edu/api/StateStatistics/GetDroughtSeverityStatisticsByArea";
 const TIMEOUT_MS = 15_000;

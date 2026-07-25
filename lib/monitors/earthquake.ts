@@ -1,4 +1,4 @@
-import type { GlobalEvent, MonitorModule } from "../../lib/types";
+import type { GlobalEvent, MonitorModule } from "../types";
 
 const USGS_API = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson";
 const TIMEOUT_MS = 15_000;

@@ -1,4 +1,4 @@
-import type { GlobalEvent, MonitorModule } from "../../lib/types";
+import type { GlobalEvent, MonitorModule } from "../types";
 
 const USGS_VP = "https://volcano.usgs.gov/vhp/api/json/volcanoes";
 const SMITHSONIAN_GVP = "https://volcano.si.edu/api/volcanoes";

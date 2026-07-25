@@ -1,4 +1,4 @@
-import type { GlobalEvent, MonitorModule } from "../../lib/types";
+import type { GlobalEvent, MonitorModule } from "../types";
 
 const STORM_EVENTS = "https://www.ncei.noaa.gov/cdo-web/api/v2/events?limit=20&dataset=STORM_EVENTS";
 const TIMEOUT_MS = 15_000;

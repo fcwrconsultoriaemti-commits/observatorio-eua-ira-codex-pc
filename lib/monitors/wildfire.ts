@@ -1,4 +1,4 @@
-import type { GlobalEvent, MonitorModule } from "../../lib/types";
+import type { GlobalEvent, MonitorModule } from "../types";
 
 const FIRMS_BASE = "https://firms.modaps.eosdis.nasa.gov/api/country/csv";
 const TIMEOUT_MS = 15_000;

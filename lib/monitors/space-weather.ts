@@ -1,4 +1,4 @@
-import type { GlobalEvent, MonitorModule } from "../../lib/types";
+import type { GlobalEvent, MonitorModule } from "../types";
 
 const SWPC_JSON = "https://services.swpc.noaa.gov/json/solar-activity.json";
 const SWPC_KP = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json";

@@ -1,4 +1,4 @@
-import type { GlobalEvent, MonitorModule } from "../../lib/types";
+import type { GlobalEvent, MonitorModule } from "../types";
 
 const SPC_REPORTS = "https://www.spc.noaa.gov/climo/reports/today.json";
 const TIMEOUT_MS = 15_000;

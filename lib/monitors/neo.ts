@@ -1,4 +1,4 @@
-import type { GlobalEvent, MonitorModule } from "../../lib/types";
+import type { GlobalEvent, MonitorModule } from "../types";
 
 const NEO_API = "https://api.nasa.gov/neo/rest/v1/feed";
 const NASA_KEY = process.env.NASA_API_KEY ?? "DEMO_KEY";

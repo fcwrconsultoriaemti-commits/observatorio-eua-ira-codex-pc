@@ -1,4 +1,4 @@
-import type { GlobalEvent, MonitorModule } from "../../lib/types";
+import type { GlobalEvent, MonitorModule } from "../types";
 
 const NHC_API = "https://www.nhc.noaa.gov/CurrentSummary.json";
 const TIMEOUT_MS = 15_000;
