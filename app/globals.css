@@ -387,9 +387,10 @@ a:hover { text-decoration: underline; }
 }
 
 .sidebar-item.active {
-  background: rgba(30, 136, 229, 0.12);
+  background: rgba(30, 136, 229, 0.15);
   color: var(--cyan);
-  border-left: 2px solid var(--cyan);
+  border-left: 3px solid var(--cyan);
+  box-shadow: inset 4px 0 12px rgba(0, 188, 212, 0.1);
 }
 
 .sidebar-item .icon {
@@ -533,7 +534,7 @@ a:hover { text-decoration: underline; }
 .map-section {
   flex: 1;
   display: grid;
-  grid-template-columns: 220px 1fr 260px;
+  grid-template-columns: 200px 1fr 280px;
   gap: 10px;
   min-height: 0;
 }
@@ -820,6 +821,7 @@ a:hover { text-decoration: underline; }
   flex-direction: column;
   gap: 10px;
   min-height: 0;
+  overflow-y: auto;
 }
 
 .alert-card {
@@ -888,9 +890,10 @@ a:hover { text-decoration: underline; }
 /* ========== BOTTOM SECTION ========== */
 .bottom-section {
   display: grid;
-  grid-template-columns: 1fr 1.5fr 1fr 1fr;
+  grid-template-columns: 1fr 1.2fr 1fr 1.2fr;
   gap: 10px;
-  min-height: 180px;
+  min-height: 220px;
+  max-height: 280px;
 }
 
 /* Timeline */
@@ -938,7 +941,7 @@ a:hover { text-decoration: underline; }
 .timeline-graph {
   flex: 1;
   position: relative;
-  min-height: 60px;
+  min-height: 80px;
 }
 
 .timeline-bar {
@@ -1208,6 +1211,8 @@ a:hover { text-decoration: underline; }
   flex: 1;
   overflow: hidden;
   position: relative;
+  mask-image: linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
 }
 
 .ticker-bar .ticker-content {

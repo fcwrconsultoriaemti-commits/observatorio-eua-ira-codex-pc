@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useI18n } from "../lib/i18n/index.js";
 import LanguageSelector from "./LanguageSelector.js";
 
@@ -8,7 +8,7 @@ type Status = "Confirmado" | "Em verificação" | "Não confirmado";
 type View = "visao_geral" | "mapa" | "eventos" | "alertas" | "timeline" | "ia" | "previsoes" | "missoes" | "fontes" | "relatorios" | "analises" | "configuracoes";
 
 const SEED_EVENTS = [
-  { id: 1, type: "terremoto", title: "Terremoto - M7.6", place: "Sul do Mar de Java, Indonésia", time: "14:28", detail: "10 km · Potencial tsunami", status: "critico" as const, color: "red", icon: "🔴", lat: 20, lng: 78 },
+  { id: 1, type: "terremoto", title: "Terremoto - M7.6", place: "Sul do Mar de Java, Indonésia", time: "14:28", detail: "10 km · Potencial tsunami", status: "critico" as const, color: "red", icon: "🔴", lat: -7.5, lng: 110.4 },
   { id: 2, type: "furacao", title: "Furacão Erin - Categoria 2", place: "Atlântico Norte", time: "13:54", detail: "Vento: 165 km/h", status: "alto" as const, color: "orange", icon: "🟠", lat: 35, lng: -45 },
   { id: 3, type: "incendio", title: "Incêndio Florestal Extremo", place: "Columbia Britânica, Canadá", time: "14:20", detail: "8.400 ha queimados", status: "alto" as const, color: "orange", icon: "🟠", lat: 52, lng: -122 },
   { id: 4, type: "conflito", title: "Conflito - Escalação Militar", place: "Oriente Médio", time: "14:18", detail: "Ataques aéreos registrados", status: "critico" as const, color: "red", icon: "🔴", lat: 33, lng: 44 },
@@ -48,13 +48,6 @@ const AI_SUGGESTIONS = [
   "Eventos críticos nas próximas 24h",
 ];
 
-const SYSTEM_NEWS = [
-  { text: "ONU emite alerta para risco humanitário...", time: "há 5 min" },
-  { text: "Mercados globais reagem a tensões no...", time: "há 12 min" },
-  { text: "Furacão Erin se intensifica no Atlântico", time: "há 18 min" },
-  { text: "Incêndios florestais continuam na...", time: "há 25 min" },
-];
-
 const NAV_ITEMS = [
   { id: "visao_geral" as View, icon: "📊", label: "Visão Geral" },
   { id: "mapa" as View, icon: "🗺️", label: "Mapa Global" },
@@ -70,6 +63,18 @@ const NAV_ITEMS = [
   { id: "configuracoes" as View, icon: "⚙️", label: "Configurações" },
 ];
 
+// Stable timeline data (no Math.random)
+const TIMELINE_DATA = [
+  35, 42, 28, 55, 68, 45, 72, 38, 85, 62, 48, 90,
+  75, 58, 44, 82, 52, 65, 78, 40, 56, 88, 70, 45
+];
+const TIMELINE_COLORS = [
+  "var(--red)", "var(--orange)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--purple)",
+  "var(--red)", "var(--orange)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--purple)",
+  "var(--red)", "var(--orange)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--purple)",
+  "var(--red)", "var(--orange)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--purple)",
+];
+
 export default function Home() {
   const { t, formatDate, formatTime, formatRelative } = useI18n();
   const [view, setView] = useState<View>("visao_geral");
@@ -78,12 +83,62 @@ export default function Home() {
   const [mapFilter, setMapFilter] = useState("TODOS");
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState(0);
+  const [news, setNews] = useState<{ title: string; source: string; publishedAt: string }[]>([]);
+  const [sync, setSync] = useState<"carregando" | "online" | "indisponível">("carregando");
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch real news for ticker
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const r = await fetch("/api/news", { cache: "no-store" });
+        if (!r.ok) throw new Error();
+        const j = await r.json() as { items: { title: string; source: string; publishedAt: string }[] };
+        if (j.items?.length) {
+          setNews(j.items.slice(0, 8));
+          setSync("online");
+        } else {
+          setSync("indisponível");
+        }
+      } catch {
+        setSync("indisponível");
+      }
+    };
+    load();
+    const t = setInterval(load, 120000);
+    return () => clearInterval(t);
+  }, []);
+
+  // AI Copilot
+  const askAI = useCallback(async (question: string) => {
+    if (!question.trim()) return;
+    setAiLoading(true);
+    setAiAnswer("");
+    try {
+      const r = await fetch("/api/copilot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, lang: "pt-BR" }),
+      });
+      const j = await r.json() as { data?: { answer?: string } };
+      setAiAnswer(j.data?.answer || "Não foi possível processar a pergunta.");
+    } catch {
+      setAiAnswer("Erro ao conectar com o assistente.");
+    } finally {
+      setAiLoading(false);
+    }
+  }, []);
+
+  const handleAiSubmit = useCallback(() => {
+    if (aiQuestion.trim()) askAI(aiQuestion);
+  }, [aiQuestion, askAI]);
 
   const kpis = useMemo(() => [
     { label: "EVENTOS HOJE", value: "247", color: "blue", trend: "+18%", up: true },
@@ -95,6 +150,29 @@ export default function Home() {
     { label: "MISSÕES ATIVAS", value: "7", color: "yellow", trend: "—" },
     { label: "ÍNDICE RISCO GLOBAL", value: "72", color: "orange" },
   ], []);
+
+  const tickerItems = useMemo(() => {
+    if (news.length > 0) return news;
+    return [
+      { title: "ONU emite alerta para risco humanitário global", source: "Sistema", publishedAt: new Date().toISOString() },
+      { title: "Mercados globais reagem a tensões no Oriente Médio", source: "Sistema", publishedAt: new Date().toISOString() },
+      { title: "Furacão Erin se intensifica no Atlântico Norte", source: "Sistema", publishedAt: new Date().toISOString() },
+      { title: "Incêndios florestais continuam na América do Norte", source: "Sistema", publishedAt: new Date().toISOString() },
+    ];
+  }, [news]);
+
+  const filteredEvents = useMemo(() => {
+    if (mapFilter === "TODOS") return SEED_EVENTS;
+    const filterMap: Record<string, string[]> = {
+      "TERREMOTOS": ["terremoto"],
+      "CLIMA": ["tempestade", "furacao"],
+      "CONFLITOS": ["conflito"],
+      "INCÊNDIOS": ["incendio"],
+      "OUTROS": ["cibernetico"],
+    };
+    const types = filterMap[mapFilter] || [];
+    return SEED_EVENTS.filter((e) => types.includes(e.type));
+  }, [mapFilter]);
 
   return (
     <div className="app">
@@ -159,6 +237,7 @@ export default function Home() {
                 key={item.id}
                 className={`sidebar-item ${view === item.id ? "active" : ""}`}
                 onClick={() => setView(item.id)}
+                title={item.label}
               >
                 <span className="icon">{item.icon}</span>
                 <span className="label">{item.label}</span>
@@ -232,38 +311,28 @@ export default function Home() {
 
                   {/* Country labels */}
                   <span className="map-country-label" style={{ left: "15%", top: "20%" }}>EUA</span>
-                  <span className="map-country-label" style={{ left: "48%", top: "25%" }}>RÚSSIA</span>
+                  <span className="map-country-label" style={{ left: "48%", top: "18%" }}>RÚSSIA</span>
                   <span className="map-country-label" style={{ left: "25%", top: "55%" }}>BRASIL</span>
-                  <span className="map-country-label" style={{ left: "62%", top: "35%" }}>CHINA</span>
-                  <span className="map-country-label" style={{ left: "55%", top: "42%" }}>ÍNDIA</span>
-                  <span className="map-country-label" style={{ left: "47%", top: "38%" }}>ORIENTE MÉDIO</span>
-                  <span className="map-country-label" style={{ left: "30%", top: "30%" }}>EUROPA</span>
-                  <span className="map-country-label" style={{ left: "55%", top: "65%" }}>ÁFRICA</span>
-                  <span className="map-country-label" style={{ left: "78%", top: "70%" }}>OCEANIA</span>
+                  <span className="map-country-label" style={{ left: "68%", top: "28%" }}>CHINA</span>
+                  <span className="map-country-label" style={{ left: "60%", top: "38%" }}>ÍNDIA</span>
+                  <span className="map-country-label" style={{ left: "48%", top: "32%" }}>ORIENTE MÉDIO</span>
+                  <span className="map-country-label" style={{ left: "38%", top: "22%" }}>EUROPA</span>
+                  <span className="map-country-label" style={{ left: "42%", top: "58%" }}>ÁFRICA</span>
+                  <span className="map-country-label" style={{ left: "78%", top: "65%" }}>OCEANIA</span>
 
-                  {/* Event pins */}
-                  {SEED_EVENTS.map((ev) => (
-                    <div
-                      key={ev.id}
-                      className={`map-pin ${ev.color}`}
-                      style={{ left: `${ev.lng / 1.8 + 15}%`, top: `${(90 - ev.lat) / 1.3 + 5}%` }}
-                      title={`${ev.title} - ${ev.place}`}
-                    >
-                      {ev.icon}
-                    </div>
-                  ))}
-
-                  {/* Extra scattered pins for visual density */}
-                  <div className="map-pin red" style={{ left: "72%", top: "28%" }}>🔴</div>
-                  <div className="map-pin orange" style={{ left: "18%", top: "38%" }}>🟠</div>
-                  <div className="map-pin yellow" style={{ left: "65%", top: "58%" }}>🟡</div>
-                  <div className="map-pin blue" style={{ left: "42%", top: "22%" }}>🔵</div>
-                  <div className="map-pin purple" style={{ left: "78%", top: "45%" }}>🟣</div>
-                  <div className="map-pin red" style={{ left: "50%", top: "50%" }}>🔴</div>
-                  <div className="map-pin green" style={{ left: "35%", top: "68%" }}>🟢</div>
-                  <div className="map-pin cyan" style={{ left: "82%", top: "32%" }}>🔵</div>
-                  <div className="map-pin orange" style={{ left: "22%", top: "52%" }}>🟠</div>
-                  <div className="map-pin red" style={{ left: "58%", top: "38%" }}>🔴</div>
+                  {/* Event pins — filtered */}
+                  {filteredEvents.map((ev) => {
+                    const x = ((ev.lng + 180) / 360) * 100;
+                    const y = ((90 - ev.lat) / 180) * 100;
+                    return (
+                      <div
+                        key={ev.id}
+                        className={`map-pin ${ev.color}`}
+                        style={{ left: `${Math.max(5, Math.min(95, x))}%`, top: `${Math.max(5, Math.min(95, y))}%` }}
+                        title={`${ev.title} — ${ev.place}`}
+                      />
+                    );
+                  })}
 
                   <div className="map-legend">
                     <span><i style={{ background: "var(--green)" }} /> Baixo</span>
@@ -282,7 +351,7 @@ export default function Home() {
                     <span className="panel-title">ALERTAS CRÍTICOS</span>
                     <button style={{ fontSize: 9, color: "var(--cyan)", fontWeight: 600 }}>Ver todos</button>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, overflow: "auto" }}>
                     {SEED_EVENTS.filter((e) => e.status === "critico").map((ev, i) => (
                       <div key={ev.id} className="alert-card" onClick={() => setSelectedAlert(i)}>
                         <div className={`alert-icon ${ev.color}`}>{ev.icon}</div>
@@ -356,18 +425,14 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="timeline-graph">
-                  {Array.from({ length: 24 }).map((_, i) => {
-                    const h = 20 + Math.random() * 80;
-                    const colors = ["var(--red)", "var(--orange)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--purple)"];
-                    return (
-                      <div key={i} className="timeline-bar" style={{
-                        left: `${(i / 23) * 100}%`,
-                        height: `${h}%`,
-                        background: colors[i % colors.length],
-                        opacity: 0.7,
-                      }} />
-                    );
-                  })}
+                  {TIMELINE_DATA.map((h, i) => (
+                    <div key={i} className="timeline-bar" style={{
+                      left: `${(i / 23) * 100}%`,
+                      height: `${h}%`,
+                      background: TIMELINE_COLORS[i],
+                      opacity: 0.7,
+                    }} />
+                  ))}
                 </div>
                 <div className="timeline-axis">
                   <span>00:00</span><span>04:00</span><span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>24:00</span>
@@ -403,8 +468,8 @@ export default function Home() {
               </div>
 
               {/* Missions + AI */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div className="panel missions-panel" style={{ flex: 1 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
+                <div className="panel missions-panel" style={{ flex: "0 0 auto" }}>
                   <div className="panel-header">
                     <span className="panel-title">MISSÕES ATIVAS</span>
                     <button style={{ fontSize: 9, color: "var(--cyan)", fontWeight: 600 }}>Ver todas</button>
@@ -421,7 +486,7 @@ export default function Home() {
                   ))}
                 </div>
 
-                <div className="panel ai-panel" style={{ flex: 1 }}>
+                <div className="panel ai-panel" style={{ flex: 1, minHeight: 0 }}>
                   <div className="panel-header">
                     <span className="panel-title">ASSISTENTE IA</span>
                     <div className="ai-status">
@@ -435,12 +500,31 @@ export default function Home() {
                       placeholder="Pergunte sobre eventos ou riscos..."
                       value={aiQuestion}
                       onChange={(e) => setAiQuestion(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAiSubmit()}
                     />
-                    <button>➤</button>
+                    <button onClick={handleAiSubmit} disabled={aiLoading}>
+                      {aiLoading ? "⏳" : "➤"}
+                    </button>
                   </div>
+                  {aiAnswer && (
+                    <div style={{
+                      padding: "8px 10px",
+                      background: "rgba(30, 136, 229, 0.08)",
+                      border: "1px solid rgba(30, 136, 229, 0.2)",
+                      borderRadius: "var(--radius-sm)",
+                      fontSize: 10,
+                      color: "var(--text-secondary)",
+                      marginBottom: 8,
+                      maxHeight: 80,
+                      overflow: "auto",
+                      lineHeight: 1.5,
+                    }}>
+                      {aiAnswer}
+                    </div>
+                  )}
                   <div className="ai-suggestions">
                     {AI_SUGGESTIONS.map((s, i) => (
-                      <button key={i} className="ai-suggestion" onClick={() => setAiQuestion(s)}>
+                      <button key={i} className="ai-suggestion" onClick={() => { setAiQuestion(s); askAI(s); }}>
                         {s}
                       </button>
                     ))}
@@ -455,10 +539,10 @@ export default function Home() {
             <span className="ticker-label">SISTEMA</span>
             <div className="ticker-track">
               <div className="ticker-content">
-                {SYSTEM_NEWS.concat(SYSTEM_NEWS).map((n, i) => (
+                {tickerItems.concat(tickerItems).map((n, i) => (
                   <span key={i} className="ticker-item">
-                    <time>{n.time}</time>
-                    {n.text}
+                    <time>{formatTime(n.publishedAt)}</time>
+                    {n.title}
                   </span>
                 ))}
               </div>
