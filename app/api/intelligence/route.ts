@@ -12,11 +12,23 @@ async function ensureInit() {
   }
 }
 
+function detectLang(req: Request, url: URL): string {
+  const qLang = url.searchParams.get("lang");
+  if (qLang) return qLang;
+  const accept = req.headers.get("accept-language");
+  if (accept) {
+    const primary = accept.split(",")[0]?.split(";")[0]?.trim();
+    if (primary) return primary;
+  }
+  return "pt-BR";
+}
+
 export async function GET(req: Request) {
   await ensureInit();
 
   const url = new URL(req.url);
   const action = url.searchParams.get("action") || "summary";
+  const lang = detectLang(req, url);
 
   try {
     switch (action) {
