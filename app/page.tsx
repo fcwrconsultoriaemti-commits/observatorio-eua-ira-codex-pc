@@ -1,52 +1,68 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useI18n } from "../lib/i18n/index.js";
 import LanguageSelector from "./LanguageSelector.js";
 
-type Status = "Confirmado" | "Em verificação" | "Não confirmado";
 type View = "visao_geral" | "mapa" | "eventos" | "alertas" | "timeline" | "ia" | "previsoes" | "missoes" | "fontes" | "relatorios" | "analises" | "configuracoes";
 
-const SEED_EVENTS = [
-  { id: 1, type: "terremoto", title: "Terremoto - M7.6", place: "Sul do Mar de Java, Indonésia", time: "14:28", detail: "10 km · Potencial tsunami", status: "critico" as const, color: "red", icon: "🔴", lat: -7.5, lng: 110.4 },
-  { id: 2, type: "furacao", title: "Furacão Erin - Categoria 2", place: "Atlântico Norte", time: "13:54", detail: "Vento: 165 km/h", status: "alto" as const, color: "orange", icon: "🟠", lat: 35, lng: -45 },
-  { id: 3, type: "incendio", title: "Incêndio Florestal Extremo", place: "Columbia Britânica, Canadá", time: "14:20", detail: "8.400 ha queimados", status: "alto" as const, color: "orange", icon: "🟠", lat: 52, lng: -122 },
-  { id: 4, type: "conflito", title: "Conflito - Escalação Militar", place: "Oriente Médio", time: "14:18", detail: "Ataques aéreos registrados", status: "critico" as const, color: "red", icon: "🔴", lat: 33, lng: 44 },
-  { id: 5, type: "cibernetico", title: "Ataque Cibernético", place: "Infraestrutura Crítica - Europa", time: "13:45", detail: "Ransomware em rede energética", status: "critico" as const, color: "red", icon: "🔴", lat: 48, lng: 10 },
-  { id: 6, type: "tempestade", title: "Tempestade Tropical", place: "Oceano Índico", time: "12:30", detail: "Rajadas de 120 km/h", status: "moderado" as const, color: "yellow", icon: "🟡", lat: -10, lng: 80 },
-  { id: 7, type: "terremoto", title: "Terremoto - M5.2", place: "Chile", time: "11:15", detail: "55 km de profundidade", status: "moderado" as const, color: "yellow", icon: "🟡", lat: -33, lng: -71 },
-  { id: 8, type: "incendio", title: "Incêndio Florestal", place: "Amazônia, Brasil", time: "10:42", detail: "2.100 ha afetados", status: "alto" as const, color: "orange", icon: "🟠", lat: -3, lng: -60 },
-];
+interface IntelligenceSummary {
+  totalEvents: number;
+  activeAlerts: number;
+  criticalAlerts: number;
+  eventsByCategory: Record<string, number>;
+  eventsByRisk: Record<string, number>;
+  recentCorrelations: { eventId: string; linkedEvents: string[]; chain: string[]; cascadeRisk: string; description: string }[];
+  lastUpdated: string;
+  trends: { category: string; direction: string; changePercent: number; period: string }[];
+  anomalies: { id: string; description: string; severity: string; detectedAt: string }[];
+  impact: { operational: number; humanitarian: number; economic: number; environmental: number; security: number };
+}
 
-const CATEGORIES = [
-  { name: "Terremotos", count: 28, icon: "🔴", bg: "rgba(244,67,54,0.12)", color: "#F44336" },
-  { name: "Tempestades", count: 31, icon: "🟣", bg: "rgba(142,36,170,0.12)", color: "#8E24AA" },
-  { name: "Furacões", count: 5, icon: "🔵", bg: "rgba(30,136,229,0.12)", color: "#1E88E5" },
-  { name: "Incêndios", count: 42, icon: "🟠", bg: "rgba(251,140,0,0.12)", color: "#FB8C00" },
-  { name: "Conflitos", count: 17, icon: "🔴", bg: "rgba(244,67,54,0.12)", color: "#F44336" },
-  { name: "Cibernético", count: 9, icon: "🔵", bg: "rgba(0,188,212,0.12)", color: "#00BCD4" },
-  { name: "Outros", count: 8, icon: "⚪", bg: "rgba(255,255,255,0.06)", color: "#B8C7D9" },
-];
+interface NewsItem {
+  title: string; url: string; source: string; publishedAt: string; fetchedAt: string;
+  status: "Confirmado" | "Em verificação" | "Não confirmado"; description: string;
+}
 
-const CORRELATION = [
-  { icon: "🔴", color: "red", label: "Terremoto (Indonésia)", sub: "M7.6 · 10 km profundidade" },
-  { icon: "🟠", color: "orange", label: "Tsunami Potencial", sub: "Alerta emitido para costa" },
-  { icon: "🟡", color: "yellow", label: "Interrupção de Portos", sub: "Portos regionais fechados" },
-  { icon: "🔵", color: "blue", label: "Impacto Logístico", sub: "Rotas marítimas desviadas" },
-  { icon: "🟢", color: "green", label: "Risco Econômico Elevado", sub: "Previsão: +3% petróleo" },
-];
+interface AlertItem {
+  id: string; eventId: string; origin: string; source: string; riskLevel: string;
+  title: string; description: string; location: { lat: number; lng: number; country?: string };
+  timestamp: string; confidence: number; status: string;
+}
 
-const MISSIONS = [
-  { name: "Avaliação de Impacto - Terremoto Indonésia", team: "Alpha", status: "andamento", badge: "Em andamento" },
-  { name: "Monitoramento de Furacão Erin", team: "Bravo", status: "andamento", badge: "Em andamento" },
-  { name: "Análise de Incêndios - América do Norte", team: "Charlie", status: "andamento", badge: "Em andamento" },
-];
+interface GlobalEvent {
+  id: string; source: string; module: string; title: string; description: string;
+  location: { lat: number; lng: number; country?: string; city?: string };
+  timestamp: string; riskLevel: string; confidence: number;
+  impact: { operational: number; humanitarian: number; economic: number; environmental: number; security: number };
+}
 
-const AI_SUGGESTIONS = [
-  "Quais eventos afetam o Brasil?",
-  "Risco para o setor de energia?",
-  "Eventos críticos nas próximas 24h",
-];
+const CATEGORY_META: Record<string, { label: string; icon: string; color: string; bg: string }> = {
+  terremoto: { label: "Terremotos", icon: "🔴", color: "#F44336", bg: "rgba(244,67,54,0.12)" },
+  vulcao: { label: "Vulcões", icon: "🟠", color: "#FB8C00", bg: "rgba(251,140,0,0.12)" },
+  furacao: { label: "Furacões", icon: "🔵", color: "#1E88E5", bg: "rgba(30,136,229,0.12)" },
+  tornado: { label: "Tornados", icon: "🟣", color: "#8E24AA", bg: "rgba(142,36,170,0.12)" },
+  clima_severo: { label: "Tempo Severo", icon: "🟣", color: "#8E24AA", bg: "rgba(142,36,170,0.12)" },
+  incendio: { label: "Incêndios", icon: "🟠", color: "#FB8C00", bg: "rgba(251,140,0,0.12)" },
+  enchente: { label: "Enchentes", icon: "🔵", color: "#1E88E5", bg: "rgba(30,136,229,0.12)" },
+  seca: { label: "Secas", icon: "🟡", color: "#FFC107", bg: "rgba(255,193,7,0.12)" },
+  espacial: { label: "Espacial", icon: "🟣", color: "#8E24AA", bg: "rgba(142,36,170,0.12)" },
+  neo: { label: "Objetos Próx. Terra", icon: "🔵", color: "#1E88E5", bg: "rgba(30,136,229,0.12)" },
+  satelite: { label: "Satélites", icon: "🔵", color: "#00BCD4", bg: "rgba(0,188,212,0.12)" },
+  saude: { label: "Saúde", icon: "🔴", color: "#F44336", bg: "rgba(244,67,54,0.12)" },
+  cibernetico: { label: "Cibernético", icon: "🔵", color: "#00BCD4", bg: "rgba(0,188,212,0.12)" },
+  energia: { label: "Energia", icon: "🟡", color: "#FFC107", bg: "rgba(255,193,7,0.12)" },
+  maritimo: { label: "Marítimo", icon: "🔵", color: "#1E88E5", bg: "rgba(30,136,229,0.12)" },
+  aereo: { label: "Aéreo", icon: "🔵", color: "#1E88E5", bg: "rgba(30,136,229,0.12)" },
+  economico: { label: "Econômico", icon: "🟡", color: "#FFC107", bg: "rgba(255,193,7,0.12)" },
+  infraestrutura: { label: "Infraestrutura", icon: "🟠", color: "#FB8C00", bg: "rgba(251,140,0,0.12)" },
+  conflito: { label: "Conflitos", icon: "🔴", color: "#F44336", bg: "rgba(244,67,54,0.12)" },
+};
+
+const RISK_COLORS: Record<string, string> = {
+  informativo: "var(--blue)", baixo: "var(--green)", moderado: "var(--yellow)",
+  alto: "var(--orange)", critico: "var(--red)", emergencia: "var(--red-critical)", extremo: "var(--red-critical)",
+};
 
 const NAV_ITEMS = [
   { id: "visao_geral" as View, icon: "📊", label: "Visão Geral" },
@@ -63,20 +79,8 @@ const NAV_ITEMS = [
   { id: "configuracoes" as View, icon: "⚙️", label: "Configurações" },
 ];
 
-// Stable timeline data (no Math.random)
-const TIMELINE_DATA = [
-  35, 42, 28, 55, 68, 45, 72, 38, 85, 62, 48, 90,
-  75, 58, 44, 82, 52, 65, 78, 40, 56, 88, 70, 45
-];
-const TIMELINE_COLORS = [
-  "var(--red)", "var(--orange)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--purple)",
-  "var(--red)", "var(--orange)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--purple)",
-  "var(--red)", "var(--orange)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--purple)",
-  "var(--red)", "var(--orange)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--purple)",
-];
-
 export default function Home() {
-  const { t, formatDate, formatTime, formatRelative } = useI18n();
+  const { t, formatDate, formatTime } = useI18n();
   const [view, setView] = useState<View>("visao_geral");
   const [now, setNow] = useState(new Date());
   const [playing, setPlaying] = useState(false);
@@ -85,42 +89,43 @@ export default function Home() {
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiAnswer, setAiAnswer] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [selectedAlert, setSelectedAlert] = useState(0);
-  const [news, setNews] = useState<{ title: string; source: string; publishedAt: string }[]>([]);
-  const [sync, setSync] = useState<"carregando" | "online" | "indisponível">("carregando");
+
+  // Real data
+  const [summary, setSummary] = useState<IntelligenceSummary | null>(null);
+  const [events, setEvents] = useState<GlobalEvent[]>([]);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch real news for ticker
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const r = await fetch("/api/news", { cache: "no-store" });
-        if (!r.ok) throw new Error();
-        const j = await r.json() as { items: { title: string; source: string; publishedAt: string }[] };
-        if (j.items?.length) {
-          setNews(j.items.slice(0, 8));
-          setSync("online");
-        } else {
-          setSync("indisponível");
-        }
-      } catch {
-        setSync("indisponível");
-      }
-    };
-    load();
-    const t = setInterval(load, 120000);
-    return () => clearInterval(t);
+  // Fetch all data
+  const fetchAll = useCallback(async () => {
+    try {
+      const [sumRes, evRes, alRes, newsRes] = await Promise.allSettled([
+        fetch("/api/intelligence?action=summary").then(r => r.json()),
+        fetch("/api/intelligence?action=events&limit=50").then(r => r.json()),
+        fetch("/api/intelligence?action=alerts&limit=20").then(r => r.json()),
+        fetch("/api/news").then(r => r.json()),
+      ]);
+
+      if (sumRes.status === "fulfilled" && sumRes.value) setSummary(sumRes.value);
+      if (evRes.status === "fulfilled" && evRes.value?.items) setEvents(evRes.value.items);
+      if (alRes.status === "fulfilled" && alRes.value?.items) setAlerts(alRes.value.items);
+      if (newsRes.status === "fulfilled" && newsRes.value?.items) setNews(newsRes.value.items);
+    } catch { /* keep existing data */ }
+    finally { setLoading(false); }
   }, []);
+
+  useEffect(() => { fetchAll(); const t = setInterval(fetchAll, 60000); return () => clearInterval(t); }, [fetchAll]);
 
   // AI Copilot
   const askAI = useCallback(async (question: string) => {
     if (!question.trim()) return;
-    setAiLoading(true);
-    setAiAnswer("");
+    setAiLoading(true); setAiAnswer("");
     try {
       const r = await fetch("/api/copilot", {
         method: "POST",
@@ -128,51 +133,211 @@ export default function Home() {
         body: JSON.stringify({ question, lang: "pt-BR" }),
       });
       const j = await r.json() as { data?: { answer?: string } };
-      setAiAnswer(j.data?.answer || "Não foi possível processar a pergunta.");
-    } catch {
-      setAiAnswer("Erro ao conectar com o assistente.");
-    } finally {
-      setAiLoading(false);
-    }
+      setAiAnswer(j.data?.answer || "Não foi possível processar.");
+    } catch { setAiAnswer("Erro ao conectar."); }
+    finally { setAiLoading(false); }
   }, []);
 
-  const handleAiSubmit = useCallback(() => {
-    if (aiQuestion.trim()) askAI(aiQuestion);
-  }, [aiQuestion, askAI]);
+  // Derived data
+  const categories = useMemo(() => {
+    if (!summary?.eventsByCategory) return [];
+    return Object.entries(summary.eventsByCategory)
+      .filter(([, count]) => count > 0)
+      .map(([key, count]) => ({
+        key, count,
+        ...(CATEGORY_META[key] || { label: key, icon: "⚪", color: "#B8C7D9", bg: "rgba(255,255,255,0.06)" }),
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [summary]);
 
-  const kpis = useMemo(() => [
-    { label: "EVENTOS HOJE", value: "247", color: "blue", trend: "+18%", up: true },
-    { label: "EVENTOS ATIVOS", value: "89", color: "cyan", trend: "+21%", up: true },
-    { label: "ALERTAS CRÍTICOS", value: "12", color: "red", trend: "+100%", up: true },
-    { label: "PAÍSES AFETADOS", value: "23", color: "green", trend: "+9%", up: true },
-    { label: "PESSOAS AFETADAS", value: "12.7M", color: "purple", trend: "+34%", up: true },
-    { label: "IMPACTO ECONÔMICO", value: "US$ 5.6B", color: "orange", trend: "+42%", up: true },
-    { label: "MISSÕES ATIVAS", value: "7", color: "yellow", trend: "—" },
-    { label: "ÍNDICE RISCO GLOBAL", value: "72", color: "orange" },
-  ], []);
+  const riskScore = useMemo(() => {
+    if (!summary?.eventsByRisk) return 50;
+    const r = summary.eventsByRisk;
+    const total = (r.informativo || 0) + (r.baixo || 0) + (r.moderado || 0) + (r.alto || 0) + (r.critico || 0) + (r.emergencia || 0) + (r.extremo || 0);
+    if (total === 0) return 50;
+    const weighted = ((r.baixo || 0) * 20 + (r.moderado || 0) * 40 + (r.alto || 0) * 65 + (r.critico || 0) * 85 + (r.emergencia || 0) * 95 + (r.extremo || 0) * 100) / total;
+    return Math.round(weighted);
+  }, [summary]);
+
+  const riskLabel = riskScore >= 80 ? "EXTREMO" : riskScore >= 65 ? "CRÍTICO" : riskScore >= 45 ? "ALTO" : riskScore >= 25 ? "MODERADO" : "BAIXO";
+  const riskColor = riskScore >= 80 ? "var(--red-critical)" : riskScore >= 65 ? "var(--red)" : riskScore >= 45 ? "var(--orange)" : riskScore >= 25 ? "var(--yellow)" : "var(--green)";
+
+  const filteredEvents = useMemo(() => {
+    if (mapFilter === "TODOS") return events;
+    const filterMap: Record<string, string[]> = {
+      TERREMOTOS: ["terremoto", "vulcao"], CLIMA: ["furacao", "tornado", "clima_severo"],
+      CONFLITOS: ["conflito"], "INCÊNDIOS": ["incendio"], OUTROS: ["cibernetico", "energia", "maritimo", "aereo", "economico", "infraestrutura", "saude", "neo", "satelite", "espacial"],
+    };
+    return events.filter(e => filterMap[mapFilter]?.includes(e.module));
+  }, [events, mapFilter]);
+
+  const timelineData = useMemo(() => {
+    const nowMs = Date.now();
+    const bins = new Array(24).fill(0);
+    events.forEach(e => {
+      const diff = nowMs - new Date(e.timestamp).getTime();
+      const hoursAgo = diff / 3600000;
+      if (hoursAgo >= 0 && hoursAgo < 24) {
+        const bin = 23 - Math.floor(hoursAgo);
+        if (bin >= 0 && bin < 24) bins[bin]++;
+      }
+    });
+    const max = Math.max(...bins, 1);
+    return bins.map(b => Math.round((b / max) * 100));
+  }, [events]);
 
   const tickerItems = useMemo(() => {
     if (news.length > 0) return news;
     return [
-      { title: "ONU emite alerta para risco humanitário global", source: "Sistema", publishedAt: new Date().toISOString() },
-      { title: "Mercados globais reagem a tensões no Oriente Médio", source: "Sistema", publishedAt: new Date().toISOString() },
-      { title: "Furacão Erin se intensifica no Atlântico Norte", source: "Sistema", publishedAt: new Date().toISOString() },
-      { title: "Incêndios florestais continuam na América do Norte", source: "Sistema", publishedAt: new Date().toISOString() },
+      { title: "Sistema inicializando...", source: "Sistema", publishedAt: new Date().toISOString(), fetchedAt: "", status: "Em verificação" as const, url: "", description: "" },
     ];
   }, [news]);
 
-  const filteredEvents = useMemo(() => {
-    if (mapFilter === "TODOS") return SEED_EVENTS;
-    const filterMap: Record<string, string[]> = {
-      "TERREMOTOS": ["terremoto"],
-      "CLIMA": ["tempestade", "furacao"],
-      "CONFLITOS": ["conflito"],
-      "INCÊNDIOS": ["incendio"],
-      "OUTROS": ["cibernetico"],
-    };
-    const types = filterMap[mapFilter] || [];
-    return SEED_EVENTS.filter((e) => types.includes(e.type));
-  }, [mapFilter]);
+  const totalActive = summary?.totalEvents || events.length;
+  const totalCritical = summary?.criticalAlerts || alerts.filter(a => a.riskLevel === "critico" || a.riskLevel === "emergencia").length;
+  const countriesAffected = useMemo(() => {
+    const countries = new Set(events.map(e => e.location?.country).filter(Boolean));
+    return countries.size || 0;
+  }, [events]);
+
+  const kpis = useMemo(() => [
+    { label: "EVENTOS HOJE", value: String(totalActive), color: "blue", trend: summary?.trends?.[0]?.direction === "crescente" ? `+${summary.trends[0].changePercent}%` : undefined, up: true },
+    { label: "EVENTOS ATIVOS", value: String(events.length), color: "cyan" },
+    { label: "ALERTAS CRÍTICOS", value: String(totalCritical), color: "red", trend: totalCritical > 5 ? "+100%" : undefined, up: true },
+    { label: "PAÍSES AFETADOS", value: String(countriesAffected), color: "green" },
+    { label: "IMPACTO HUMANITÁRIO", value: `${summary?.impact?.humanitarian || 0}`, color: "purple" },
+    { label: "IMPACTO ECONÔMICO", value: `${summary?.impact?.economic || 0}`, color: "orange" },
+    { label: "MISSÕES ATIVAS", value: "3", color: "yellow" },
+    { label: "ÍNDICE RISCO GLOBAL", value: String(riskScore), color: riskScore >= 65 ? "red" : riskScore >= 45 ? "orange" : "green" },
+  ], [totalActive, events.length, totalCritical, countriesAffected, summary, riskScore]);
+
+  // --- VIEWS ---
+  const renderView = () => {
+    switch (view) {
+      case "eventos":
+        return (
+          <div className="panel" style={{ flex: 1 }}>
+            <div className="panel-header"><span className="panel-title">EVENTOS ({events.length})</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, overflow: "auto", flex: 1 }}>
+              {events.map(ev => (
+                <div key={ev.id} style={{ display: "flex", gap: 8, padding: "8px 10px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", cursor: "pointer" }}>
+                  <div style={{ width: 6, borderRadius: 3, background: RISK_COLORS[ev.riskLevel] || "var(--text-muted)", flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600 }}>{ev.title}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{ev.location?.country || ev.location?.city || "—"}</div>
+                    <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{formatTime(ev.timestamp)} · {ev.source}</div>
+                  </div>
+                  <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: RISK_COLORS[ev.riskLevel] || "var(--text-muted)", color: "#fff", alignSelf: "flex-start" }}>{ev.riskLevel.toUpperCase()}</span>
+                </div>
+              ))}
+              {events.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>{loading ? "Carregando eventos..." : "Nenhum evento registrado"}</div>}
+            </div>
+          </div>
+        );
+      case "alertas":
+        return (
+          <div className="panel" style={{ flex: 1 }}>
+            <div className="panel-header"><span className="panel-title">ALERTAS ({alerts.length})</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, overflow: "auto", flex: 1 }}>
+              {alerts.map(al => (
+                <div key={al.id} className="alert-card">
+                  <div className={`alert-icon ${al.riskLevel === "critico" || al.riskLevel === "emergencia" ? "red" : al.riskLevel === "alto" ? "orange" : "yellow"}`}>⚠</div>
+                  <div style={{ flex: 1 }}>
+                    <div className="alert-title">{al.title}</div>
+                    <div className="alert-meta">{al.description?.slice(0, 100)}</div>
+                    <div style={{ display: "flex", gap: 6, marginTop: 4, alignItems: "center" }}>
+                      <span className={`alert-badge ${al.riskLevel === "critico" || al.riskLevel === "emergencia" ? "critico" : al.riskLevel === "alto" ? "alto" : "moderado"}`}>{al.riskLevel.toUpperCase()}</span>
+                      <span className="alert-time">{formatTime(al.timestamp)}</span>
+                      <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{al.origin}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {alerts.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>{loading ? "Carregando alertas..." : "Nenhum alerta ativo"}</div>}
+            </div>
+          </div>
+        );
+      case "ia":
+        return (
+          <div className="panel" style={{ flex: 1 }}>
+            <div className="panel-header"><span className="panel-title">ASSISTENTE DE INTELIGÊNCIA IA</span><div className="ai-status"><div className="ai-status-dot" /><span className="ai-status-text">Online</span></div></div>
+            <div className="ai-input" style={{ marginBottom: 12 }}>
+              <input type="text" placeholder="Pergunte sobre eventos, riscos, tendências..." value={aiQuestion} onChange={e => setAiQuestion(e.target.value)} onKeyDown={e => e.key === "Enter" && askAI(aiQuestion)} />
+              <button onClick={() => askAI(aiQuestion)} disabled={aiLoading}>{aiLoading ? "⏳" : "➤"}</button>
+            </div>
+            {aiAnswer && <div style={{ padding: 12, background: "rgba(30,136,229,0.08)", border: "1px solid rgba(30,136,229,0.2)", borderRadius: "var(--radius-sm)", fontSize: 11, color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{aiAnswer}</div>}
+            <div className="panel-title" style={{ marginBottom: 8 }}>PERGUNTAS SUGERIDAS</div>
+            <div className="ai-suggestions">
+              {["Quais eventos afetam o Brasil?", "Risco para o setor de energia?", "Eventos críticos nas próximas 24h", "Resumo da situação atual", "Qual é o risco global?", "Correlações entre eventos"].map((s, i) => (
+                <button key={i} className="ai-suggestion" onClick={() => { setAiQuestion(s); askAI(s); }}>{s}</button>
+              ))}
+            </div>
+          </div>
+        );
+      case "fontes":
+        return (
+          <div className="panel" style={{ flex: 1 }}>
+            <div className="panel-header"><span className="panel-title">FONTES MONITORADAS</span><span className="panel-badge">{news.length} ativas</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, overflow: "auto", flex: 1 }}>
+              {(() => {
+                const sources = new Map<string, { count: number; lastSeen: string }>();
+                news.forEach(n => { const e = sources.get(n.source); if (e) { e.count++; } else { sources.set(n.source, { count: 1, lastSeen: n.publishedAt }); }});
+                return Array.from(sources.entries()).sort((a, b) => b[1].count - a[1].count).map(([name, data]) => (
+                  <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                    <div><div style={{ fontSize: 12, fontWeight: 600 }}>{name}</div><div style={{ fontSize: 9, color: "var(--text-muted)" }}>Último: {formatTime(data.lastSeen)}</div></div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "var(--cyan)" }}>{data.count}</div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        );
+      case "timeline":
+        return (
+          <div className="panel timeline-panel" style={{ flex: 1 }}>
+            <div className="timeline-header"><span className="panel-title">TIMELINE (ÚLTIMAS 24H) — {events.length} eventos</span>
+              <div className="timeline-controls"><button className={playing ? "playing" : ""} onClick={() => setPlaying(!playing)}>{playing ? "⏸" : "▶"}</button></div>
+            </div>
+            <div className="timeline-graph" style={{ minHeight: 200 }}>
+              {timelineData.map((h, i) => (
+                <div key={i} className="timeline-bar" style={{ left: `${(i / 23) * 100}%`, height: `${Math.max(h, 3)}%`, background: `var(--${i % 3 === 0 ? "red" : i % 3 === 1 ? "orange" : "blue"})`, opacity: 0.7 }} />
+              ))}
+            </div>
+            <div className="timeline-axis"><span>-24h</span><span>-18h</span><span>-12h</span><span>-6h</span><span>AGORA</span></div>
+          </div>
+        );
+      case "relatorios":
+        return (
+          <div className="panel" style={{ flex: 1 }}>
+            <div className="panel-header"><span className="panel-title">RELATÓRIOS</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, overflow: "auto", flex: 1 }}>
+              {summary?.trends?.map((tr, i) => (
+                <div key={i} style={{ padding: "10px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, textTransform: "capitalize" }}>{tr.category.replace(/_/g, " ")}</span>
+                    <span style={{ fontSize: 10, color: tr.direction === "crescente" ? "var(--red)" : tr.direction === "decrescente" ? "var(--green)" : "var(--text-muted)" }}>
+                      {tr.direction === "crescente" ? "↑" : tr.direction === "decrescente" ? "↓" : "→"} {tr.changePercent}%
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 2 }}>{tr.period}</div>
+                </div>
+              ))}
+              {summary?.anomalies?.map((an, i) => (
+                <div key={i} style={{ padding: "10px 14px", background: "rgba(244,67,54,0.06)", border: "1px solid rgba(244,67,54,0.15)", borderRadius: "var(--radius-sm)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--red)" }}>Anomalia Detectada</div>
+                  <div style={{ fontSize: 10, color: "var(--text-secondary)", marginTop: 2 }}>{an.description}</div>
+                </div>
+              ))}
+              {(!summary?.trends?.length && !summary?.anomalies?.length) && <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>{loading ? "Carregando..." : "Sem dados de relatório"}</div>}
+            </div>
+          </div>
+        );
+      default:
+        return null; // visao_geral / mapa use the standard layout
+    }
+  };
+
+  const isMainView = view === "visao_geral" || view === "mapa";
 
   return (
     <div className="app">
@@ -180,370 +345,218 @@ export default function Home() {
       <header className="header">
         <div className="header-logo">
           <div className="logo-icon">🌍</div>
-          <div>
-            <h1>OBSERVATÓRIO GLOBAL</h1>
-            <small>INTELIGÊNCIA · PREVENÇÃO · PROTEÇÃO</small>
-          </div>
+          <div><h1>OBSERVATÓRIO GLOBAL</h1><small>INTELIGÊNCIA · PREVENÇÃO · PROTEÇÃO</small></div>
         </div>
-
         <div className="header-kpis">
-          <div className="header-kpi">
-            <div className="kpi-icon blue">⚡</div>
-            <div><div className="kpi-label">EVENTOS ATIVOS</div><div className="kpi-value blue">247</div></div>
-          </div>
-          <div className="header-kpi">
-            <div className="kpi-icon red">🔴</div>
-            <div><div className="kpi-label">ALERTAS CRÍTICOS</div><div className="kpi-value red">12</div></div>
-          </div>
-          <div className="header-kpi">
-            <div className="kpi-icon yellow">⚠</div>
-            <div><div className="kpi-label">RISCO GLOBAL</div><div className="kpi-value yellow">ALTO</div></div>
-          </div>
-          <div className="header-kpi">
-            <div className="kpi-icon green">📡</div>
-            <div><div className="kpi-label">FONTES MONITORADAS</div><div className="kpi-value green">198</div></div>
-          </div>
+          <div className="header-kpi"><div className="kpi-icon blue">⚡</div><div><div className="kpi-label">EVENTOS ATIVOS</div><div className="kpi-value blue">{totalActive}</div></div></div>
+          <div className="header-kpi"><div className="kpi-icon red">🔴</div><div><div className="kpi-label">ALERTAS CRÍTICOS</div><div className="kpi-value red">{totalCritical}</div></div></div>
+          <div className="header-kpi"><div className="kpi-icon yellow">⚠</div><div><div className="kpi-label">RISCO GLOBAL</div><div className="kpi-value yellow">{riskLabel}</div></div></div>
+          <div className="header-kpi"><div className="kpi-icon green">📡</div><div><div className="kpi-label">FONTES</div><div className="kpi-value green">{news.length || "—"}</div></div></div>
         </div>
-
         <div className="header-right">
           <LanguageSelector />
-          <div className="header-clock">
-            <div className="time">{formatTime(now)}</div>
-            <div className="date">{formatDate(now, { day: "2-digit", month: "2-digit", year: "numeric" })} BRT</div>
-          </div>
+          <div className="header-clock"><div className="time">{formatTime(now)}</div><div className="date">{formatDate(now, { day: "2-digit", month: "2-digit", year: "numeric" })} BRT</div></div>
           <div className="header-actions">
-            <button title="Notificações">🔔<span className="badge">3</span></button>
+            <button title="Notificações">🔔<span className="badge">{totalCritical}</span></button>
             <button title="Configurações">⚙️</button>
           </div>
-          <div className="header-profile">
-            <div className="avatar">WR</div>
-            <div className="profile-info">
-              <div className="profile-name">Operador WR</div>
-              <div className="profile-role">Administrador</div>
-            </div>
-          </div>
+          <div className="header-profile"><div className="avatar">WR</div><div className="profile-info"><div className="profile-name">Operador WR</div><div className="profile-role">Administrador</div></div></div>
         </div>
       </header>
 
       <div className="body">
-        {/* SIDEBAR */}
         <nav className={`sidebar ${sidebarExpanded ? "expanded" : ""}`}>
-          <button className="sidebar-toggle" onClick={() => setSidebarExpanded(!sidebarExpanded)}>
-            {sidebarExpanded ? "◀" : "☰"}
-          </button>
+          <button className="sidebar-toggle" onClick={() => setSidebarExpanded(!sidebarExpanded)}>{sidebarExpanded ? "◀" : "☰"}</button>
           <div className="sidebar-nav">
-            {NAV_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                className={`sidebar-item ${view === item.id ? "active" : ""}`}
-                onClick={() => setView(item.id)}
-                title={item.label}
-              >
-                <span className="icon">{item.icon}</span>
-                <span className="label">{item.label}</span>
+            {NAV_ITEMS.map(item => (
+              <button key={item.id} className={`sidebar-item ${view === item.id ? "active" : ""}`} onClick={() => setView(item.id)} title={item.label}>
+                <span className="icon">{item.icon}</span><span className="label">{item.label}</span>
                 {item.badge !== undefined && <span className="badge-count">{item.badge}</span>}
               </button>
             ))}
           </div>
         </nav>
 
-        {/* MAIN CONTENT */}
         <main className="main">
           <div className="main-content">
-            {/* KPI ROW */}
-            <div className="kpi-row">
-              {kpis.map((kpi) => (
-                <div key={kpi.label} className={`kpi-card ${kpi.color}`}>
-                  <div className="kpi-label">{kpi.label}</div>
-                  <div className={`kpi-value ${kpi.color}`}>{kpi.value}</div>
-                  {kpi.trend && (
-                    <div className={`kpi-trend ${kpi.up ? "up" : "down"}`}>
-                      {kpi.up ? "↑" : "↓"} {kpi.trend}
+            {isMainView ? (
+              <>
+                <div className="kpi-row">
+                  {kpis.map(kpi => (
+                    <div key={kpi.label} className={`kpi-card ${kpi.color}`}>
+                      <div className="kpi-label">{kpi.label}</div>
+                      <div className={`kpi-value ${kpi.color}`}>{kpi.value}</div>
+                      {kpi.trend && <div className={`kpi-trend ${kpi.up ? "up" : "down"}`}>{kpi.up ? "↑" : "↓"} {kpi.trend}</div>}
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-
-            {/* MAP SECTION */}
-            <div className="map-section">
-              {/* LEFT PANEL - Categories */}
-              <div className="map-panel-left">
-                <div className="panel" style={{ flex: 1 }}>
-                  <div className="panel-header">
-                    <span className="panel-title">CATEGORIAS</span>
-                    <span className="panel-badge">142</span>
-                  </div>
-                  <div className="category-list">
-                    {CATEGORIES.map((cat) => (
-                      <div key={cat.name} className="category-item">
-                        <div className="cat-icon" style={{ background: cat.bg }}>{cat.icon}</div>
-                        <span className="cat-name">{cat.name}</span>
-                        <span className="cat-count" style={{ color: cat.color }}>{cat.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <button style={{ marginTop: 8, fontSize: 10, color: "var(--cyan)", fontWeight: 600, textAlign: "left" }}>
-                    Mostrar tudo →
-                  </button>
-                </div>
-              </div>
-
-              {/* MAP */}
-              <div className="map-container">
-                <div className="map-toolbar">
-                  <div className="map-filters">
-                    {["TODOS", "TERREMOTOS", "CLIMA", "CONFLITOS", "INCÊNDIOS", "OUTROS"].map((f) => (
-                      <button key={f} className={`map-filter-btn ${mapFilter === f ? "active" : ""}`} onClick={() => setMapFilter(f)}>
-                        {f}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="map-controls">
-                    <button title="Filtros">⚙</button>
-                    <button title="Tela cheia">⛶</button>
-                  </div>
-                </div>
-
-                <div className="map-world">
-                  <div className="map-grid" />
-                  <div className="map-land" />
-
-                  {/* Country labels */}
-                  <span className="map-country-label" style={{ left: "15%", top: "20%" }}>EUA</span>
-                  <span className="map-country-label" style={{ left: "48%", top: "18%" }}>RÚSSIA</span>
-                  <span className="map-country-label" style={{ left: "25%", top: "55%" }}>BRASIL</span>
-                  <span className="map-country-label" style={{ left: "68%", top: "28%" }}>CHINA</span>
-                  <span className="map-country-label" style={{ left: "60%", top: "38%" }}>ÍNDIA</span>
-                  <span className="map-country-label" style={{ left: "48%", top: "32%" }}>ORIENTE MÉDIO</span>
-                  <span className="map-country-label" style={{ left: "38%", top: "22%" }}>EUROPA</span>
-                  <span className="map-country-label" style={{ left: "42%", top: "58%" }}>ÁFRICA</span>
-                  <span className="map-country-label" style={{ left: "78%", top: "65%" }}>OCEANIA</span>
-
-                  {/* Event pins — filtered */}
-                  {filteredEvents.map((ev) => {
-                    const x = ((ev.lng + 180) / 360) * 100;
-                    const y = ((90 - ev.lat) / 180) * 100;
-                    return (
-                      <div
-                        key={ev.id}
-                        className={`map-pin ${ev.color}`}
-                        style={{ left: `${Math.max(5, Math.min(95, x))}%`, top: `${Math.max(5, Math.min(95, y))}%` }}
-                        title={`${ev.title} — ${ev.place}`}
-                      />
-                    );
-                  })}
-
-                  <div className="map-legend">
-                    <span><i style={{ background: "var(--green)" }} /> Baixo</span>
-                    <span><i style={{ background: "var(--yellow)" }} /> Moderado</span>
-                    <span><i style={{ background: "var(--orange)" }} /> Alto</span>
-                    <span><i style={{ background: "var(--red)" }} /> Crítico</span>
-                    <span><i style={{ background: "var(--red-critical)" }} /> Emergência</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* RIGHT PANEL - Alerts */}
-              <div className="map-panel-right">
-                <div className="panel" style={{ flex: 1 }}>
-                  <div className="panel-header">
-                    <span className="panel-title">ALERTAS CRÍTICOS</span>
-                    <button style={{ fontSize: 9, color: "var(--cyan)", fontWeight: 600 }}>Ver todos</button>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, overflow: "auto" }}>
-                    {SEED_EVENTS.filter((e) => e.status === "critico").map((ev, i) => (
-                      <div key={ev.id} className="alert-card" onClick={() => setSelectedAlert(i)}>
-                        <div className={`alert-icon ${ev.color}`}>{ev.icon}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="alert-title">{ev.title}</div>
-                          <div className="alert-meta">{ev.place}</div>
-                          <div style={{ display: "flex", gap: 6, marginTop: 4, alignItems: "center" }}>
-                            <span className={`alert-badge ${ev.status}`}>{ev.status.toUpperCase()}</span>
-                            <span className="alert-time">{ev.time}</span>
+                <div className="map-section">
+                  <div className="map-panel-left">
+                    <div className="panel" style={{ flex: 1 }}>
+                      <div className="panel-header"><span className="panel-title">CATEGORIAS</span><span className="panel-badge">{categories.reduce((s, c) => s + c.count, 0)}</span></div>
+                      <div className="category-list">
+                        {categories.map(cat => (
+                          <div key={cat.key} className="category-item">
+                            <div className="cat-icon" style={{ background: cat.bg }}>{cat.icon}</div>
+                            <span className="cat-name">{cat.label}</span>
+                            <span className="cat-count" style={{ color: cat.color }}>{cat.count}</span>
                           </div>
+                        ))}
+                        {categories.length === 0 && <div style={{ textAlign: "center", padding: 20, color: "var(--text-muted)", fontSize: 10 }}>{loading ? "Carregando..." : "Sem dados"}</div>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="map-container">
+                    <div className="map-toolbar">
+                      <div className="map-filters">
+                        {["TODOS", "TERREMOTOS", "CLIMA", "CONFLITOS", "INCÊNDIOS", "OUTROS"].map(f => (
+                          <button key={f} className={`map-filter-btn ${mapFilter === f ? "active" : ""}`} onClick={() => setMapFilter(f)}>{f}</button>
+                        ))}
+                      </div>
+                      <div className="map-controls"><button title="Filtros">⚙</button><button title="Tela cheia">⛶</button></div>
+                    </div>
+                    <div className="map-world">
+                      <div className="map-grid" /><div className="map-land" />
+                      <span className="map-country-label" style={{ left: "15%", top: "20%" }}>EUA</span>
+                      <span className="map-country-label" style={{ left: "48%", top: "18%" }}>RÚSSIA</span>
+                      <span className="map-country-label" style={{ left: "25%", top: "55%" }}>BRASIL</span>
+                      <span className="map-country-label" style={{ left: "68%", top: "28%" }}>CHINA</span>
+                      <span className="map-country-label" style={{ left: "60%", top: "38%" }}>ÍNDIA</span>
+                      <span className="map-country-label" style={{ left: "48%", top: "32%" }}>ORIENTE MÉDIO</span>
+                      <span className="map-country-label" style={{ left: "38%", top: "22%" }}>EUROPA</span>
+                      <span className="map-country-label" style={{ left: "42%", top: "58%" }}>ÁFRICA</span>
+                      <span className="map-country-label" style={{ left: "78%", top: "65%" }}>OCEANIA</span>
+                      {filteredEvents.map(ev => {
+                        const x = ((ev.location?.lng || 0 + 180) / 360) * 100;
+                        const y = ((90 - (ev.location?.lat || 0)) / 180) * 100;
+                        const c = RISK_COLORS[ev.riskLevel] || "var(--text-muted)";
+                        return <div key={ev.id} className="map-pin" style={{ left: `${Math.max(5, Math.min(95, x))}%`, top: `${Math.max(5, Math.min(95, y))}%`, background: c, color: c }} title={`${ev.title} — ${ev.location?.country || ""}`} />;
+                      })}
+                      {filteredEvents.length === 0 && events.length === 0 && (
+                        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "var(--text-muted)", fontSize: 12, zIndex: 10 }}>{loading ? "Carregando mapa..." : "Nenhum evento no mapa"}</div>
+                      )}
+                      <div className="map-legend">
+                        <span><i style={{ background: "var(--green)" }} /> Baixo</span>
+                        <span><i style={{ background: "var(--yellow)" }} /> Moderado</span>
+                        <span><i style={{ background: "var(--orange)" }} /> Alto</span>
+                        <span><i style={{ background: "var(--red)" }} /> Crítico</span>
+                        <span><i style={{ background: "var(--red-critical)" }} /> Emergência</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="map-panel-right">
+                    <div className="panel" style={{ flex: 1 }}>
+                      <div className="panel-header"><span className="panel-title">ALERTAS CRÍTICOS</span><button style={{ fontSize: 9, color: "var(--cyan)", fontWeight: 600 }} onClick={() => setView("alertas")}>Ver todos</button></div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, overflow: "auto" }}>
+                        {alerts.filter(a => a.riskLevel === "critico" || a.riskLevel === "emergencia").slice(0, 5).map(al => (
+                          <div key={al.id} className="alert-card">
+                            <div className="alert-icon red">⚠</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div className="alert-title">{al.title}</div>
+                              <div className="alert-meta">{al.location?.country || al.origin}</div>
+                              <div style={{ display: "flex", gap: 6, marginTop: 4, alignItems: "center" }}>
+                                <span className="alert-badge critico">{al.riskLevel.toUpperCase()}</span>
+                                <span className="alert-time">{formatTime(al.timestamp)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {alerts.filter(a => a.riskLevel === "critico" || a.riskLevel === "emergencia").length === 0 && <div style={{ textAlign: "center", padding: 20, color: "var(--text-muted)", fontSize: 10 }}>{loading ? "..." : "Sem alertas críticos"}</div>}
+                      </div>
+                    </div>
+                    <div className="panel">
+                      <div className="panel-header"><span className="panel-title">RISCO GLOBAL (24H)</span></div>
+                      <div className="risk-gauge"><div className="risk-gauge-arc" /><div className="risk-gauge-value"><div className="value" style={{ color: riskColor }}>{riskScore}</div><div className="label">/100</div></div></div>
+                      <div style={{ textAlign: "center", marginTop: 8 }}><span style={{ fontSize: 10, fontWeight: 600, color: riskColor }}>{riskLabel}</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bottom-section">
+                  <div className="panel">
+                    <div className="panel-header"><span className="panel-title">EVENTOS RECENTES</span><span className="panel-badge">{formatTime(summary?.lastUpdated || new Date())}</span></div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, overflow: "auto" }}>
+                      {events.slice(0, 5).map(ev => (
+                        <div key={ev.id} style={{ display: "flex", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                          <div style={{ width: 6, borderRadius: 3, background: RISK_COLORS[ev.riskLevel] || "var(--text-muted)", flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 11, fontWeight: 600 }}>{ev.title}</div>
+                            <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{ev.location?.country || "—"}</div>
+                            <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{formatTime(ev.timestamp)} · {ev.source}</div>
+                          </div>
+                          <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: RISK_COLORS[ev.riskLevel] || "var(--text-muted)", color: "#fff", alignSelf: "flex-start" }}>{ev.riskLevel.toUpperCase()}</span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Risk Gauge */}
-                <div className="panel">
-                  <div className="panel-header">
-                    <span className="panel-title">RISCO GLOBAL (24H)</span>
-                  </div>
-                  <div className="risk-gauge">
-                    <div className="risk-gauge-arc" />
-                    <div className="risk-gauge-value">
-                      <div className="value">72</div>
-                      <div className="label">/100</div>
+                      ))}
+                      {events.length === 0 && <div style={{ textAlign: "center", padding: 20, color: "var(--text-muted)", fontSize: 10 }}>{loading ? "Carregando..." : "Sem eventos"}</div>}
                     </div>
                   </div>
-                  <div style={{ textAlign: "center", marginTop: 8 }}>
-                    <span style={{ fontSize: 9, color: "var(--text-muted)" }}>Tendência (24h)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* BOTTOM SECTION */}
-            <div className="bottom-section">
-              {/* Recent Events */}
-              <div className="panel">
-                <div className="panel-header">
-                  <span className="panel-title">EVENTOS RECENTES</span>
-                  <span className="panel-badge">Atualizado agora</span>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, overflow: "auto" }}>
-                  {SEED_EVENTS.slice(0, 4).map((ev) => (
-                    <div key={ev.id} style={{ display: "flex", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-                      <div className={`alert-icon ${ev.color}`} style={{ width: 28, height: 28, borderRadius: 6, fontSize: 12 }}>{ev.icon}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 600 }}>{ev.title}</div>
-                        <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{ev.place}</div>
-                        <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{ev.time} · {ev.detail}</div>
-                      </div>
-                      <span className={`alert-badge ${ev.status}`} style={{ alignSelf: "flex-start" }}>{ev.status.toUpperCase()}</span>
+                  <div className="panel timeline-panel">
+                    <div className="timeline-header"><span className="panel-title">TIMELINE (ÚLTIMAS 24H)</span>
+                      <div className="timeline-controls"><button className={playing ? "playing" : ""} onClick={() => setPlaying(!playing)}>{playing ? "⏸" : "▶"}</button><span style={{ fontSize: 9, color: "var(--text-muted)" }}>1x</span></div>
                     </div>
-                  ))}
-                </div>
-                <button style={{ marginTop: 6, fontSize: 10, color: "var(--cyan)", fontWeight: 600 }}>
-                  Ver todos os eventos →
-                </button>
-              </div>
-
-              {/* Timeline */}
-              <div className="panel timeline-panel">
-                <div className="timeline-header">
-                  <span className="panel-title">TIMELINE (ÚLTIMAS 24H)</span>
-                  <div className="timeline-controls">
-                    <button className={playing ? "playing" : ""} onClick={() => setPlaying(!playing)}>
-                      {playing ? "⏸" : "▶"}
-                    </button>
-                    <span style={{ fontSize: 9, color: "var(--text-muted)" }}>1x</span>
+                    <div className="timeline-graph">
+                      {timelineData.map((h, i) => (
+                        <div key={i} className="timeline-bar" style={{ left: `${(i / 23) * 100}%`, height: `${Math.max(h, 3)}%`, background: `var(--${i % 3 === 0 ? "red" : i % 3 === 1 ? "orange" : "blue"})`, opacity: 0.7 }} />
+                      ))}
+                    </div>
+                    <div className="timeline-axis"><span>00:00</span><span>04:00</span><span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>24:00</span></div>
                   </div>
-                </div>
-                <div className="timeline-graph">
-                  {TIMELINE_DATA.map((h, i) => (
-                    <div key={i} className="timeline-bar" style={{
-                      left: `${(i / 23) * 100}%`,
-                      height: `${h}%`,
-                      background: TIMELINE_COLORS[i],
-                      opacity: 0.7,
-                    }} />
-                  ))}
-                </div>
-                <div className="timeline-axis">
-                  <span>00:00</span><span>04:00</span><span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>24:00</span>
-                </div>
-                <div className="timeline-legend">
-                  <span><i style={{ background: "var(--red)" }} /> Terremotos</span>
-                  <span><i style={{ background: "var(--green)" }} /> Clima</span>
-                  <span><i style={{ background: "var(--orange)" }} /> Incêndios</span>
-                  <span><i style={{ background: "var(--yellow)" }} /> Conflitos</span>
-                  <span><i style={{ background: "var(--text-muted)" }} /> Outros</span>
-                </div>
-              </div>
 
-              {/* Correlation */}
-              <div className="panel correlation-panel">
-                <div className="panel-header">
-                  <span className="panel-title">CADEIAS DE CORRELAÇÃO</span>
-                </div>
-                <div className="correlation-chain">
-                  {CORRELATION.map((step, i) => (
-                    <div key={i} className="correlation-step">
-                      <div className={`correlation-dot ${step.color}`}>{step.icon}</div>
-                      <div className="correlation-text">
-                        <div>{step.label}</div>
-                        <small>{step.sub}</small>
+                  <div className="panel correlation-panel">
+                    <div className="panel-header"><span className="panel-title">CADEIAS DE CORRELAÇÃO</span></div>
+                    <div className="correlation-chain">
+                      {(summary?.recentCorrelations?.length ? summary.recentCorrelations[0].chain : []).length > 0
+                        ? summary!.recentCorrelations[0].chain.map((step, i) => (
+                          <div key={i} className="correlation-step">
+                            <div className={`correlation-dot ${i === 0 ? "red" : i < 3 ? "orange" : "green"}`}>{i === 0 ? "🔴" : i < 3 ? "🟠" : "🟢"}</div>
+                            <div className="correlation-text"><div>{step}</div></div>
+                          </div>
+                        ))
+                        : CORRELATION_FALLBACK.map((step, i) => (
+                          <div key={i} className="correlation-step">
+                            <div className={`correlation-dot ${step.color}`}>{step.icon}</div>
+                            <div className="correlation-text"><div>{step.label}</div><small>{step.sub}</small></div>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
+                    <div className="panel missions-panel" style={{ flex: "0 0 auto" }}>
+                      <div className="panel-header"><span className="panel-title">MISSÕES ATIVAS</span><button style={{ fontSize: 9, color: "var(--cyan)", fontWeight: 600 }} onClick={() => setView("missoes")}>Ver todas</button></div>
+                      {["Avaliação de Impacto - Eventos Recentes", "Monitoramento de Alertas Críticos", "Análise de Correlações"].map((name, i) => (
+                        <div key={i} className="mission-item"><div className="mission-status active" /><div className="mission-info"><div className="mission-name">{name}</div><div className="mission-meta">Equipe {["Alpha", "Bravo", "Charlie"][i]}</div></div><span className="mission-badge andamento">Em andamento</span></div>
+                      ))}
+                    </div>
+                    <div className="panel ai-panel" style={{ flex: 1, minHeight: 0 }}>
+                      <div className="panel-header"><span className="panel-title">ASSISTENTE IA</span><div className="ai-status"><div className="ai-status-dot" /><span className="ai-status-text">Online</span></div></div>
+                      <div className="ai-input">
+                        <input type="text" placeholder="Pergunte sobre eventos ou riscos..." value={aiQuestion} onChange={e => setAiQuestion(e.target.value)} onKeyDown={e => e.key === "Enter" && askAI(aiQuestion)} />
+                        <button onClick={() => askAI(aiQuestion)} disabled={aiLoading}>{aiLoading ? "⏳" : "➤"}</button>
+                      </div>
+                      {aiAnswer && <div style={{ padding: "6px 8px", background: "rgba(30,136,229,0.08)", border: "1px solid rgba(30,136,229,0.2)", borderRadius: "var(--radius-sm)", fontSize: 10, color: "var(--text-secondary)", marginBottom: 6, maxHeight: 60, overflow: "auto", lineHeight: 1.4 }}>{aiAnswer}</div>}
+                      <div className="ai-suggestions">
+                        {["Quais eventos afetam o Brasil?", "Risco para o setor de energia?", "Eventos críticos nas próximas 24h"].map((s, i) => (
+                          <button key={i} className="ai-suggestion" onClick={() => { setAiQuestion(s); askAI(s); }}>{s}</button>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-                <button style={{ marginTop: 8, fontSize: 10, color: "var(--cyan)", fontWeight: 600 }}>
-                  Ver todas as correlações
-                </button>
-              </div>
-
-              {/* Missions + AI */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
-                <div className="panel missions-panel" style={{ flex: "0 0 auto" }}>
-                  <div className="panel-header">
-                    <span className="panel-title">MISSÕES ATIVAS</span>
-                    <button style={{ fontSize: 9, color: "var(--cyan)", fontWeight: 600 }}>Ver todas</button>
-                  </div>
-                  {MISSIONS.map((m, i) => (
-                    <div key={i} className="mission-item">
-                      <div className={`mission-status ${m.status}`} />
-                      <div className="mission-info">
-                        <div className="mission-name">{m.name}</div>
-                        <div className="mission-meta">{m.team} · {m.badge}</div>
-                      </div>
-                      <span className={`mission-badge ${m.status}`}>{m.badge}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="panel ai-panel" style={{ flex: 1, minHeight: 0 }}>
-                  <div className="panel-header">
-                    <span className="panel-title">ASSISTENTE IA</span>
-                    <div className="ai-status">
-                      <div className="ai-status-dot" />
-                      <span className="ai-status-text">Online</span>
-                    </div>
-                  </div>
-                  <div className="ai-input">
-                    <input
-                      type="text"
-                      placeholder="Pergunte sobre eventos ou riscos..."
-                      value={aiQuestion}
-                      onChange={(e) => setAiQuestion(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAiSubmit()}
-                    />
-                    <button onClick={handleAiSubmit} disabled={aiLoading}>
-                      {aiLoading ? "⏳" : "➤"}
-                    </button>
-                  </div>
-                  {aiAnswer && (
-                    <div style={{
-                      padding: "8px 10px",
-                      background: "rgba(30, 136, 229, 0.08)",
-                      border: "1px solid rgba(30, 136, 229, 0.2)",
-                      borderRadius: "var(--radius-sm)",
-                      fontSize: 10,
-                      color: "var(--text-secondary)",
-                      marginBottom: 8,
-                      maxHeight: 80,
-                      overflow: "auto",
-                      lineHeight: 1.5,
-                    }}>
-                      {aiAnswer}
-                    </div>
-                  )}
-                  <div className="ai-suggestions">
-                    {AI_SUGGESTIONS.map((s, i) => (
-                      <button key={i} className="ai-suggestion" onClick={() => { setAiQuestion(s); askAI(s); }}>
-                        {s}
-                      </button>
-                    ))}
                   </div>
                 </div>
-              </div>
-            </div>
+              </>
+            ) : renderView()}
           </div>
 
-          {/* TICKER */}
           <div className="ticker-bar">
             <span className="ticker-label">SISTEMA</span>
             <div className="ticker-track">
               <div className="ticker-content">
                 {tickerItems.concat(tickerItems).map((n, i) => (
-                  <span key={i} className="ticker-item">
-                    <time>{formatTime(n.publishedAt)}</time>
-                    {n.title}
-                  </span>
+                  <span key={i} className="ticker-item"><time>{formatTime(n.publishedAt)}</time>{n.title}</span>
                 ))}
               </div>
             </div>
@@ -551,19 +564,19 @@ export default function Home() {
         </main>
       </div>
 
-      {/* FOOTER */}
       <footer className="footer">
-        <div className="footer-left">
-          <div className="status-dot" />
-          Global Intelligence Platform v3.0
-        </div>
-        <div className="footer-center">
-          Dados em tempo real · Fontes confiáveis · Inteligência para decisões melhores
-        </div>
-        <div className="footer-right">
-          Todos os sistemas operando normalmente
-        </div>
+        <div className="footer-left"><div className="status-dot" />Global Intelligence Platform v3.0</div>
+        <div className="footer-center">Dados em tempo real · Fontes confiáveis · Inteligência para decisões melhores</div>
+        <div className="footer-right">Todos os sistemas operando normalmente</div>
       </footer>
     </div>
   );
 }
+
+const CORRELATION_FALLBACK = [
+  { icon: "🔴", color: "red", label: "Evento Principal", sub: "Detecção inicial" },
+  { icon: "🟠", color: "orange", label: "Consequência Direta", sub: "Impacto primário" },
+  { icon: "🟡", color: "yellow", label: "Efeito Cascata", sub: "Impacto secundário" },
+  { icon: "🔵", color: "blue", label: "Impacto Sistêmico", sub: "Alcance regional" },
+  { icon: "🟢", color: "green", label: "Resposta Operacional", sub: "Ações de mitigação" },
+];
