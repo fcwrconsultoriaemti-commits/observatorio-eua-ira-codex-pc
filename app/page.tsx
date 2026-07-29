@@ -28,6 +28,8 @@ interface AlertItem {
   id: string; eventId: string; origin: string; source: string; riskLevel: string;
   title: string; description: string; location: { lat: number; lng: number; country?: string };
   timestamp: string; confidence: number; status: string;
+  impact?: { operational: number; humanitarian: number; economic: number; environmental: number; security: number };
+  relatedEvents?: string[]; acknowledged?: boolean;
 }
 
 interface GlobalEvent {
@@ -35,6 +37,7 @@ interface GlobalEvent {
   location: { lat: number; lng: number; country?: string; city?: string };
   timestamp: string; riskLevel: string; confidence: number;
   impact: { operational: number; humanitarian: number; economic: number; environmental: number; security: number };
+  tags?: string[]; relatedEvents?: string[]; metadata?: Record<string, unknown>;
 }
 
 const CATEGORY_META: Record<string, { label: string; icon: string; color: string; bg: string }> = {
@@ -96,6 +99,13 @@ export default function Home() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [predictions, setPredictions] = useState<any[]>([]);
+  const [missionsList, setMissionsList] = useState<any[]>([]);
+  const [insights, setInsights] = useState<any[]>([]);
+  const [sectorsList, setSectorsList] = useState<string[]>([]);
+  const [sectorKpis, setSectorKpis] = useState<any[]>([]);
+  const [securityDash, setSecurityDash] = useState<any>(null);
+  const [selectedSector, setSelectedSector] = useState("energy");
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
@@ -105,22 +115,40 @@ export default function Home() {
   // Fetch all data
   const fetchAll = useCallback(async () => {
     try {
-      const [sumRes, evRes, alRes, newsRes] = await Promise.allSettled([
+      const [sumRes, evRes, alRes, newsRes, predRes, misRes, insRes, secRes, secListRes] = await Promise.allSettled([
         fetch("/api/intelligence?action=summary").then(r => r.json()),
         fetch("/api/intelligence?action=events&limit=50").then(r => r.json()),
         fetch("/api/intelligence?action=alerts&limit=20").then(r => r.json()),
         fetch("/api/news").then(r => r.json()),
+        fetch("/api/predictions?action=all").then(r => r.json()),
+        fetch("/api/missions?action=list").then(r => r.json()),
+        fetch("/api/decision?action=insights&limit=20").then(r => r.json()),
+        fetch("/api/security?action=dashboard").then(r => r.json()),
+        fetch("/api/sectors?action=list").then(r => r.json()),
       ]);
 
       if (sumRes.status === "fulfilled" && sumRes.value) setSummary(sumRes.value);
       if (evRes.status === "fulfilled" && evRes.value?.items) setEvents(evRes.value.items);
       if (alRes.status === "fulfilled" && alRes.value?.items) setAlerts(alRes.value.items);
       if (newsRes.status === "fulfilled" && newsRes.value?.items) setNews(newsRes.value.items);
+      if (predRes.status === "fulfilled" && predRes.value?.items) setPredictions(predRes.value.items);
+      if (misRes.status === "fulfilled" && misRes.value?.items) setMissionsList(misRes.value.items);
+      if (insRes.status === "fulfilled" && insRes.value?.data) setInsights(Array.isArray(insRes.value.data) ? insRes.value.data : []);
+      if (secRes.status === "fulfilled" && secRes.value?.data) setSecurityDash(secRes.value.data);
+      if (secListRes.status === "fulfilled" && secListRes.value?.data) setSectorsList(secListRes.value.data);
     } catch { /* keep existing data */ }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchAll(); const t = setInterval(fetchAll, 60000); return () => clearInterval(t); }, [fetchAll]);
+
+  // Fetch sector KPIs when sector changes
+  useEffect(() => {
+    fetch(`/api/sectors?action=kpis&sector=${selectedSector}`)
+      .then(r => r.json())
+      .then(d => { if (d.data) setSectorKpis(d.data); })
+      .catch(() => {});
+  }, [selectedSector]);
 
   // AI Copilot
   const askAI = useCallback(async (question: string) => {
@@ -332,6 +360,159 @@ export default function Home() {
             </div>
           </div>
         );
+      case "previsoes":
+        return (
+          <div className="panel" style={{ flex: 1 }}>
+            <div className="panel-header"><span className="panel-title">PREVISÕES ({predictions.length})</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, overflow: "auto", flex: 1 }}>
+              {predictions.map((p: any) => (
+                <div key={p.id} style={{ padding: "12px 14px", background: "var(--card)", border: `1px solid ${RISK_COLORS[p.riskLevel] || "var(--border)"}`, borderRadius: "var(--radius-sm)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600 }}>{p.title}</div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{p.description}</div>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 10 }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: RISK_COLORS[p.riskLevel] || "var(--text-muted)" }}>{Math.round(p.probability * 100)}%</div>
+                      <div style={{ fontSize: 8, color: "var(--text-muted)" }}>probabilidade</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: RISK_COLORS[p.riskLevel] || "var(--text-muted)", color: "#fff" }}>{p.riskLevel.toUpperCase()}</span>
+                    <span style={{ fontSize: 8, padding: "2px 6px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>{p.category}</span>
+                    <span style={{ fontSize: 8, padding: "2px 6px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>{p.timeframe}</span>
+                    <span style={{ fontSize: 8, padding: "2px 6px", borderRadius: 4, background: "rgba(30,136,229,0.12)", color: "var(--blue)" }}>confiança {Math.round(p.confidence * 100)}%</span>
+                    <span style={{ fontSize: 8, padding: "2px 6px", borderRadius: 4, background: "rgba(0,188,212,0.12)", color: "var(--cyan)" }}>{p.modelType}</span>
+                  </div>
+                  {p.factors?.length > 0 && (
+                    <div style={{ marginTop: 6, fontSize: 9, color: "var(--text-muted)" }}>
+                      Fatores: {p.factors.join(", ")}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {predictions.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>{loading ? "Carregando previsões..." : "Nenhuma previsão disponível"}</div>}
+            </div>
+          </div>
+        );
+      case "missoes":
+        return (
+          <div className="panel" style={{ flex: 1 }}>
+            <div className="panel-header"><span className="panel-title">MISSÕES ({missionsList.length})</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, overflow: "auto", flex: 1 }}>
+              {missionsList.map((m: any) => (
+                <div key={m.id} style={{ padding: "10px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600 }}>{m.title}</div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{m.description}</div>
+                    </div>
+                    <div className="mission-item" style={{ flexShrink: 0, marginLeft: 8 }}>
+                      <div className={`mission-status ${m.status === "em_andamento" ? "active" : m.status === "concluida" ? "completed" : ""}`} />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap", alignItems: "center" }}>
+                    <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: m.priority === "urgente" ? "var(--red)" : m.priority === "alta" ? "var(--orange)" : "var(--blue)", color: "#fff" }}>{m.priority.toUpperCase()}</span>
+                    <span style={{ fontSize: 8, padding: "2px 6px", borderRadius: 4, background: m.status === "em_andamento" ? "rgba(0,188,212,0.12)" : m.status === "concluida" ? "rgba(76,175,80,0.12)" : "rgba(255,255,255,0.06)", color: m.status === "em_andamento" ? "var(--cyan)" : m.status === "concluida" ? "var(--green)" : "var(--text-muted)" }}>{m.status.replace(/_/g, " ").toUpperCase()}</span>
+                    {m.team?.length > 0 && <span style={{ fontSize: 8, padding: "2px 6px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>Equipe {m.team.join(", ")}</span>}
+                    {m.location?.address && <span style={{ fontSize: 8, color: "var(--text-muted)" }}>{m.location.address}</span>}
+                  </div>
+                </div>
+              ))}
+              {missionsList.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>{loading ? "Carregando missões..." : "Nenhuma missão ativa"}</div>}
+            </div>
+          </div>
+        );
+      case "analises":
+        return (
+          <div className="panel" style={{ flex: 1 }}>
+            <div className="panel-header"><span className="panel-title">ANÁLISES SETORIAIS</span></div>
+            <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)", display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {sectorsList.map(s => (
+                <button key={s} onClick={() => setSelectedSector(s)} style={{ fontSize: 9, padding: "4px 8px", borderRadius: 4, border: `1px solid ${selectedSector === s ? "var(--cyan)" : "var(--border)"}`, background: selectedSector === s ? "rgba(0,188,212,0.12)" : "transparent", color: selectedSector === s ? "var(--cyan)" : "var(--text-muted)", cursor: "pointer" }}>{s}</button>
+              ))}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, overflow: "auto", flex: 1, padding: 12 }}>
+              {sectorKpis.length > 0 ? sectorKpis.map((kpi: any, i: number) => (
+                <div key={i} style={{ padding: "10px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{kpi.name}</span>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: kpi.status === "critical" ? "var(--red)" : kpi.status === "warning" ? "var(--orange)" : "var(--green)" }}>{kpi.value}</span>
+                      {kpi.unit && <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{kpi.unit}</span>}
+                      <span style={{ fontSize: 10, color: kpi.trend === "up" ? "var(--red)" : kpi.trend === "down" ? "var(--green)" : "var(--text-muted)" }}>{kpi.trend === "up" ? "↑" : kpi.trend === "down" ? "↓" : "→"}</span>
+                    </div>
+                  </div>
+                </div>
+              )) : insights.length > 0 ? insights.map((ins: any, i: number) => (
+                <div key={i} style={{ padding: "10px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>{ins.title || ins.action || `Insight ${i + 1}`}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{ins.description || ins.detail || ""}</div>
+                  {ins.priority && <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: ins.priority === "urgente" ? "var(--red)" : "var(--orange)", color: "#fff", marginTop: 4, display: "inline-block" }}>{ins.priority.toUpperCase()}</span>}
+                </div>
+              )) : <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>{loading ? "Carregando análises..." : "Selecione um setor para análise"}</div>}
+            </div>
+          </div>
+        );
+      case "configuracoes":
+        return (
+          <div className="panel" style={{ flex: 1 }}>
+            <div className="panel-header"><span className="panel-title">CONFIGURAÇÕES</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, overflow: "auto", flex: 1, padding: 12 }}>
+              {securityDash ? (
+                <>
+                  <div style={{ padding: "12px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>SEGURANÇA</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <div style={{ padding: "8px 10px", background: "rgba(30,136,229,0.08)", borderRadius: 4 }}>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Status</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--green)" }}>{securityDash.status || "Operacional"}</div>
+                      </div>
+                      <div style={{ padding: "8px 10px", background: "rgba(0,188,212,0.08)", borderRadius: 4 }}>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Usuários Ativos</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--cyan)" }}>{securityDash.activeUsers || 0}</div>
+                      </div>
+                      <div style={{ padding: "8px 10px", background: "rgba(255,193,7,0.08)", borderRadius: 4 }}>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Tentativas de Login (24h)</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--yellow)" }}>{securityDash.loginAttempts24h || 0}</div>
+                      </div>
+                      <div style={{ padding: "8px 10px", background: "rgba(244,67,54,0.08)", borderRadius: 4 }}>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Falhas de Autenticação</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--red)" }}>{securityDash.authFailures || 0}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding: "12px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>COMPLIANCE</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {(securityDash.compliance || ["LGPD", "SOC2", "ISO27001"]).map((c: string) => (
+                        <div key={c} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: "rgba(76,175,80,0.06)", borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600 }}>{c}</span>
+                          <span style={{ fontSize: 9, color: "var(--green)" }}>Conforme</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ padding: "12px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>POLÍTICA DE SEGURANÇA</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                      Mínimo de 8 caracteres · 1 maiúscula · 1 número · 1 especial · Expiração: 90 dias · 2FA obrigatório para administradores
+                    </div>
+                  </div>
+                  <div style={{ padding: "12px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>PLATAFORMA</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Versão: <span style={{ color: "var(--text-secondary)" }}>3.0.0</span></div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Runtime: <span style={{ color: "var(--text-secondary)" }}>Node.js 22+</span></div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Deploy: <span style={{ color: "var(--text-secondary)" }}>Vercel</span></div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Módulos: <span style={{ color: "var(--text-secondary)" }}>19+ ativos</span></div>
+                    </div>
+                  </div>
+                </>
+              ) : <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>{loading ? "Carregando configurações..." : "Sem dados disponíveis"}</div>}
+            </div>
+          </div>
+        );
       default:
         return null; // visao_geral / mapa use the standard layout
     }
@@ -428,7 +609,7 @@ export default function Home() {
                       <span className="map-country-label" style={{ left: "42%", top: "58%" }}>ÁFRICA</span>
                       <span className="map-country-label" style={{ left: "78%", top: "65%" }}>OCEANIA</span>
                       {filteredEvents.map(ev => {
-                        const x = ((ev.location?.lng || 0 + 180) / 360) * 100;
+                        const x = (((ev.location?.lng ?? 0) + 180) / 360) * 100;
                         const y = ((90 - (ev.location?.lat || 0)) / 180) * 100;
                         const c = RISK_COLORS[ev.riskLevel] || "var(--text-muted)";
                         return <div key={ev.id} className="map-pin" style={{ left: `${Math.max(5, Math.min(95, x))}%`, top: `${Math.max(5, Math.min(95, y))}%`, background: c, color: c }} title={`${ev.title} — ${ev.location?.country || ""}`} />;

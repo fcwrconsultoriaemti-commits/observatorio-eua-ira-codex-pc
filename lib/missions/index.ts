@@ -56,6 +56,28 @@ export interface MissionHistoryEntry {
 const missions: Map<string, Mission> = new Map();
 let missionCounter = 0;
 
+// ─── SEED MISSIONS ──────────────────────────────────────────
+
+(function seedMissions() {
+  const seeds = [
+    { title: "Avaliação de Impacto - Terremoto Pacífico", description: "Avaliar impactos de atividade sísmica no anel de fogo do Pacífico", priority: "alta" as const, lat: 35.6762, lng: 139.6503, address: "Tokyo, Japão", team: ["Alpha", "Gamma"], createdBy: "Sistema", tags: ["sísmico", "pacifico"], status: "em_andamento" as const },
+    { title: "Monitoramento de Furacão Ativo", description: "Rastreamento de trajetória e previsão de impacto costeiro", priority: "urgente" as const, lat: 25.7617, lng: -80.1918, address: "Miami, EUA", team: ["Bravo"], createdBy: "Sistema", tags: ["furacão", "atlântico"], status: "em_andamento" as const },
+    { title: "Análise de Correlações Geopolíticas", description: "Investigar correlações entre eventos no Oriente Médio e mercados energéticos", priority: "media" as const, lat: 25.2048, lng: 55.2708, address: "Dubai, EAU", team: ["Charlie"], createdBy: "Sistema", tags: ["geopolítica", "energia"], status: "atribuida" as const },
+  ];
+  for (const s of seeds) {
+    const id = `MSN-${Date.now()}-${++missionCounter}`;
+    const now = new Date().toISOString();
+    missions.set(id, {
+      id, title: s.title, description: s.description, status: s.status, priority: s.priority,
+      location: { lat: s.lat, lng: s.lng, address: s.address }, team: s.team, createdBy: s.createdBy,
+      createdAt: now, updatedAt: now, deadline: new Date(Date.now() + 86400000 * 7).toISOString(),
+      attachments: [], communications: [],
+      history: [{ action: "Missão criada", by: s.createdBy, timestamp: now }],
+      relatedEvents: [], tags: s.tags, notes: "",
+    });
+  }
+})();
+
 // ─── CRUD ──────────────────────────────────────────────────
 
 export function createMission(params: {

@@ -21,8 +21,10 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data: getPushHistory(limit) });
       }
 
-      case "offline_cache":
-        return NextResponse.json({ success: true, data: getOfflineCacheStatus() });
+      case "offline_cache": {
+        const userId = url.searchParams.get("userId") || "default";
+        return NextResponse.json({ success: true, data: getOfflineCacheStatus(userId) });
+      }
 
       case "version": {
         const version = url.searchParams.get("version");
@@ -30,8 +32,10 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data: checkVersionCompatibility(version) });
       }
 
-      case "dashboard":
-        return NextResponse.json({ success: true, data: getMobileDashboard() });
+      case "dashboard": {
+        const userId = url.searchParams.get("userId") || "default";
+        return NextResponse.json({ success: true, data: getMobileDashboard(userId) });
+      }
 
       default:
         return NextResponse.json({ success: false, error: "Ação desconhecida" }, { status: 400 });
