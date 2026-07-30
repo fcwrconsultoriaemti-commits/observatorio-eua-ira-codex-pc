@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { registerAllModules, getMonitorList } from "../../../lib/monitors";
-import { collectAll, getEvents, getSummary, healthCheck, getAlerts } from "../../../lib/core";
+import { collectAll, getEvents, getSummary, healthCheck, getAlerts, startAutoCollection } from "../../../lib/core";
 import { detectTrends, detectAnomalies, calculateImpactScore } from "../../../lib/ai";
 
 let initialized = false;
+let autoCollectionStarted = false;
 
 async function ensureInit() {
   if (!initialized) {
     registerAllModules();
     initialized = true;
+  }
+  if (!autoCollectionStarted) {
+    autoCollectionStarted = true;
+    startAutoCollection();
   }
 }
 

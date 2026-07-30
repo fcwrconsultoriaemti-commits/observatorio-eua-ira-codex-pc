@@ -63,7 +63,7 @@ const MONITOR: MonitorModule = {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const [noaaRes, marineRes] = await Promise.allSettled([
+      const [marineRes, gdacsRes] = await Promise.allSettled([
         fetch("https://marine-api.open-meteo.com/v1/marine?latitude=0&longitude=0&current=wave_height,wave_period,swell_wave_height&daily=wave_height_max&timezone=auto", {
           signal: controller.signal,
         }),
@@ -77,8 +77,35 @@ const MONITOR: MonitorModule = {
 
       const events: GlobalEvent[] = [];
 
+      // Parse Open-Meteo marine data
       if (marineRes.status === "fulfilled" && marineRes.value.ok) {
-        const text = await marineRes.value.text();
+        const data = await marineRes.value.json();
+        if (data.current) {
+          const waveHeight = data.current.wave_height || 0;
+          const swellHeight = data.current.swell_wave_height || 0;
+          if (waveHeight > 2 || swellHeight > 3) {
+            events.push({
+              id: `maritime-marine-${Date.now()}`,
+              source: "Open-Meteo Marine",
+              module: "maritimo",
+              title: `Condições marítimas adversas — ondas ${waveHeight}m, swell ${swellHeight}m`,
+              description: `Ondas de ${waveHeight}m com período de ${data.current.wave_period || "N/A"}s. Swell de ${swellHeight}m.`,
+              location: { lat: 0, lng: 0, country: "Internacional" },
+              timestamp: new Date().toISOString(),
+              riskLevel: waveHeight > 4 ? "alto" : waveHeight > 2 ? "moderado" : "informativo",
+              impact: { operational: Math.min(Math.round(waveHeight * 10), 60), humanitarian: 20, economic: 30, environmental: 15, security: 10 },
+              confidence: 0.90,
+              tags: ["maritimo", "ondas", "open-meteo"],
+              relatedEvents: [],
+              metadata: { source_type: "Open-Meteo", wave_height: waveHeight, swell_height: swellHeight, wave_period: data.current.wave_period },
+            });
+          }
+        }
+      }
+
+      // Parse GDACS RSS
+      if (gdacsRes.status === "fulfilled" && gdacsRes.value.ok) {
+        const text = await gdacsRes.value.text();
         const items = text.match(/<item>[\s\S]*?<\/item>/g) || [];
         for (const item of items.slice(0, 10)) {
           const title = (item.match(/<title><!\[CDATA\[(.*?)\]\]>/) || item.match(/<title>(.*?)<\/title>/))?.[1] || "Unknown";

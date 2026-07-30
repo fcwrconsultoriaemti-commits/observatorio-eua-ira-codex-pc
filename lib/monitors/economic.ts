@@ -79,8 +79,8 @@ const MONITOR: MonitorModule = {
 
       const events: GlobalEvent[] = [];
 
-      if (cryptoRes.status === "fulfilled" && cryptoRes.value.ok) {
-        const data = await cryptoRes.value.json();
+      if (goldRes.status === "fulfilled" && goldRes.value.ok) {
+        const data = await goldRes.value.json();
         for (const [asset, info] of Object.entries(data)) {
           const coinInfo = info as { usd: number; usd_24h_change: number };
           if (coinInfo.usd && coinInfo.usd_24h_change !== undefined) {
@@ -104,8 +104,8 @@ const MONITOR: MonitorModule = {
         }
       }
 
-      if (fxRes.status === "fulfilled" && fxRes.value.ok) {
-        const data = await fxRes.value.json();
+      if (cryptoRes.status === "fulfilled" && cryptoRes.value.ok) {
+        const data = await cryptoRes.value.json();
         if (data.rates) {
           events.push({
             id: `economic-fx-usd-${Date.now()}`,

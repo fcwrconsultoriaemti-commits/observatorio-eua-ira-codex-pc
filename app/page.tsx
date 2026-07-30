@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useI18n } from "../lib/i18n/index.js";
 import LanguageSelector from "./LanguageSelector.js";
 
-type View = "visao_geral" | "mapa" | "eventos" | "alertas" | "timeline" | "ia" | "previsoes" | "missoes" | "fontes" | "relatorios" | "analises" | "configuracoes";
+type View = "visao_geral" | "mapa" | "eventos" | "alertas" | "timeline" | "ia" | "previsoes" | "missoes" | "fontes" | "relatorios" | "analises" | "configuracoes" | "operacional";
 
 interface IntelligenceSummary {
   totalEvents: number;
@@ -79,6 +79,7 @@ const NAV_ITEMS = [
   { id: "fontes" as View, icon: "📰", label: "Fontes" },
   { id: "relatorios" as View, icon: "📋", label: "Relatórios" },
   { id: "analises" as View, icon: "📈", label: "Análises" },
+  { id: "operacional" as View, icon: "🛰", label: "Centro Operacional" },
   { id: "configuracoes" as View, icon: "⚙️", label: "Configurações" },
 ];
 
@@ -106,6 +107,7 @@ export default function Home() {
   const [sectorKpis, setSectorKpis] = useState<any[]>([]);
   const [securityDash, setSecurityDash] = useState<any>(null);
   const [selectedSector, setSelectedSector] = useState("energy");
+  const [operational, setOperational] = useState<any>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
@@ -115,7 +117,7 @@ export default function Home() {
   // Fetch all data
   const fetchAll = useCallback(async () => {
     try {
-      const [sumRes, evRes, alRes, newsRes, predRes, misRes, insRes, secRes, secListRes] = await Promise.allSettled([
+      const [sumRes, evRes, alRes, newsRes, predRes, misRes, insRes, secRes, secListRes, opRes] = await Promise.allSettled([
         fetch("/api/intelligence?action=summary").then(r => r.json()),
         fetch("/api/intelligence?action=events&limit=50").then(r => r.json()),
         fetch("/api/intelligence?action=alerts&limit=20").then(r => r.json()),
@@ -125,6 +127,7 @@ export default function Home() {
         fetch("/api/decision?action=insights&limit=20").then(r => r.json()),
         fetch("/api/security?action=dashboard").then(r => r.json()),
         fetch("/api/sectors?action=list").then(r => r.json()),
+        fetch("/api/operational?action=operational").then(r => r.json()),
       ]);
 
       if (sumRes.status === "fulfilled" && sumRes.value) setSummary(sumRes.value);
@@ -136,6 +139,7 @@ export default function Home() {
       if (insRes.status === "fulfilled" && insRes.value?.data) setInsights(Array.isArray(insRes.value.data) ? insRes.value.data : []);
       if (secRes.status === "fulfilled" && secRes.value?.data) setSecurityDash(secRes.value.data);
       if (secListRes.status === "fulfilled" && secListRes.value?.data) setSectorsList(secListRes.value.data);
+      if (opRes.status === "fulfilled" && opRes.value?.data) setOperational(opRes.value.data);
     } catch { /* keep existing data */ }
     finally { setLoading(false); }
   }, []);
@@ -510,6 +514,71 @@ export default function Home() {
                   </div>
                 </>
               ) : <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>{loading ? "Carregando configurações..." : "Sem dados disponíveis"}</div>}
+            </div>
+          </div>
+        );
+      case "operacional":
+        return (
+          <div className="panel" style={{ flex: 1 }}>
+            <div className="panel-header"><span className="panel-title">CENTRO OPERACIONAL</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, overflow: "auto", flex: 1, padding: 12 }}>
+              {operational ? (
+                <>
+                  <div style={{ padding: "12px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>RESUMO</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                      <div style={{ padding: "8px 10px", background: "rgba(76,175,80,0.08)", borderRadius: 4 }}>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Fontes Online</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--green)" }}>{operational.sourcesOnline || 0}</div>
+                      </div>
+                      <div style={{ padding: "8px 10px", background: "rgba(244,67,54,0.08)", borderRadius: 4 }}>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Fontes Offline</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--red)" }}>{operational.sourcesOffline || 0}</div>
+                      </div>
+                      <div style={{ padding: "8px 10px", background: "rgba(30,136,229,0.08)", borderRadius: 4 }}>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Eventos/Min</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--blue)" }}>{operational.eventsPerMinute || 0}</div>
+                      </div>
+                      <div style={{ padding: "8px 10px", background: "rgba(0,188,212,0.08)", borderRadius: 4 }}>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Latência Média</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--cyan)" }}>{operational.averageResponseTime || 0}ms</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding: "12px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>FONTES DE DADOS</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {(operational.sources || []).map((s: any) => (
+                        <div key={s.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: s.online ? "rgba(76,175,80,0.06)" : "rgba(244,67,54,0.06)", border: `1px solid ${s.online ? "rgba(76,175,80,0.15)" : "rgba(244,67,54,0.15)"}`, borderRadius: 4 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: s.online ? "var(--green)" : "var(--red)" }} />
+                            <div>
+                              <div style={{ fontSize: 11, fontWeight: 600 }}>{s.name}</div>
+                              <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{s.category} · {s.responseTime || 0}ms</div>
+                            </div>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: s.online ? "var(--green)" : "var(--red)" }}>{s.online ? "ONLINE" : "OFFLINE"}</div>
+                            <div style={{ fontSize: 8, color: "var(--text-muted)" }}>{s.eventsCollected || 0} eventos</div>
+                          </div>
+                        </div>
+                      ))}
+                      {(!operational.sources || operational.sources.length === 0) && <div style={{ textAlign: "center", padding: 20, color: "var(--text-muted)", fontSize: 10 }}>Nenhuma fonte registrada</div>}
+                    </div>
+                  </div>
+                  <div style={{ padding: "12px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>MÉTRICAS</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Eventos no Store: <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{operational.eventsInStore || 0}</span></div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Alertas Ativos: <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{operational.alertsActive || 0}</span></div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Módulos Ativos: <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{operational.monitorsActive || 0}/{operational.monitorsTotal || 0}</span></div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Coletas/Min: <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{operational.collectionsLastMinute || 0}</span></div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Última Coleta: <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{operational.lastCollection ? formatTime(operational.lastCollection) : "—"}</span></div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Próxima Coleta: <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{operational.nextCollection ? formatTime(operational.nextCollection) : "—"}</span></div>
+                    </div>
+                  </div>
+                </>
+              ) : <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>{loading ? "Carregando dados operacionais..." : "Sem dados disponíveis"}</div>}
             </div>
           </div>
         );

@@ -40,7 +40,6 @@ async function fetchEvents(): Promise<GlobalEvent[]> {
   try {
     const res = await fetch(`${STORM_EVENTS}&limit=20`, {
       signal: AbortSignal.timeout(TIMEOUT_MS),
-      headers: { token: "" },
     });
     if (!res.ok) return seedData;
     const data = await res.json();

@@ -3,12 +3,22 @@
 // ============================================================
 
 import type { GlobalEvent, GlobalAlert, RiskLevel, RiskCategory, ImpactScores, CorrelationResult, IntelligenceSummary, MonitorModule } from "../types";
+import { runPipeline, runPipelineBatch } from "../infrastructure/pipeline.js";
+import { startScheduler, stopScheduler, registerTask, getSchedulerStatus } from "../infrastructure/scheduler.js";
+import { getOperationalPanel, getSystemMetrics, getMonitorMetrics, log as obsLog } from "../infrastructure/observability.js";
+import { cacheStats } from "../infrastructure/cache.js";
+import { getAllCircuitBreakers } from "../infrastructure/retry.js";
 
 // In-memory store (em produção usar Redis/DB)
 const eventStore: Map<string, GlobalEvent> = new Map();
 const alertStore: Map<string, GlobalAlert> = new Map();
 const correlationStore: Map<string, CorrelationResult> = new Map();
 const moduleRegistry: Map<string, MonitorModule> = new Map();
+
+let totalEventsCollected = 0;
+let totalCorrelations = 0;
+let collectionRunning = false;
+let autoStarted = false;
 
 // ─── EVENT PROCESSING ──────────────────────────────────────
 
@@ -21,45 +31,139 @@ export function getRegisteredModules(): MonitorModule[] {
 }
 
 export async function collectAll(): Promise<GlobalEvent[]> {
-  const allEvents: GlobalEvent[] = [];
-  const modules = getRegisteredModules().filter(m => m.enabled);
+  if (collectionRunning) return Array.from(eventStore.values());
+  collectionRunning = true;
+  const startTime = Date.now();
 
-  const results = await Promise.allSettled(
-    modules.map(async (mod) => {
-      try {
-        const events = await mod.fetch();
-        return events;
-      } catch {
-        return [] as GlobalEvent[];
+  try {
+    const modules = getRegisteredModules().filter(m => m.enabled);
+    const existingEvents = Array.from(eventStore.values());
+
+    // Collect from all modules in parallel
+    const results = await Promise.allSettled(
+      modules.map(async (mod) => {
+        const modStart = Date.now();
+        try {
+          const events = await mod.fetch();
+          obsLog("info", mod.name, `Collected ${events.length} events`, { duration: Date.now() - modStart });
+          return { events, source: mod.name, category: mod.category };
+        } catch (err) {
+          obsLog("error", mod.name, `Collection failed: ${err instanceof Error ? err.message : "unknown"}`, { duration: Date.now() - modStart });
+          return { events: [] as GlobalEvent[], source: mod.name, category: mod.category };
+        }
+      })
+    );
+
+    // Process through pipeline
+    const monitorResults = results
+      .filter((r): r is PromiseFulfilledResult<{ events: GlobalEvent[]; source: string; category: RiskCategory }> => r.status === "fulfilled")
+      .map(r => r.value);
+
+    const pipelineResult = runPipelineBatch(monitorResults, existingEvents);
+
+    // Store events
+    for (const event of pipelineResult.events) {
+      eventStore.set(event.id, event);
+    }
+
+    // Store alerts
+    for (const alert of pipelineResult.alerts) {
+      const existing = alertStore.get(alert.id);
+      if (!existing) {
+        alertStore.set(alert.id, alert);
+      } else {
+        existing.status = "atualizado";
+        existing.timestamp = new Date().toISOString();
+        existing.impact = alert.impact;
+        existing.riskLevel = alert.riskLevel;
       }
-    })
-  );
+    }
 
-  for (const result of results) {
-    if (result.status === "fulfilled") {
-      allEvents.push(...result.value);
+    // Correlate events
+    const correlations = correlateEvents(pipelineResult.events);
+    for (const corr of correlations) {
+      correlationStore.set(corr.eventId, corr);
+    }
+
+    totalEventsCollected += pipelineResult.events.length;
+    totalCorrelations += correlations.length;
+
+    // Auto-create missions for high-impact events
+    for (const event of pipelineResult.events) {
+      const maxImpact = Math.max(
+        event.impact.operational, event.impact.humanitarian,
+        event.impact.economic, event.impact.environmental, event.impact.security
+      );
+      if (maxImpact > 85) {
+        try {
+          const { createMission } = await import("../missions/index.js");
+          createMission({
+            title: `Missão Automática: ${event.title}`,
+            description: `Evento de alto impacto detectado: ${event.description?.slice(0, 200)}`,
+            priority: maxImpact > 95 ? "urgente" : "alta",
+            lat: event.location?.lat ?? 0,
+            lng: event.location?.lng ?? 0,
+            address: event.location?.country || "Desconhecido",
+            team: ["Sistema"],
+            createdBy: "Pipeline Automático",
+            relatedEvents: [event.id],
+            tags: [event.module, "automático", "alto-impacto"],
+          });
+        } catch { /* missions module may not be available */ }
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    obsLog("info", "core", `Collection cycle complete: ${pipelineResult.events.length} events, ${pipelineResult.alertsGenerated} alerts, ${correlations.length} correlations`, {
+      duration,
+      stats: pipelineResult.stats,
+    });
+
+    return pipelineResult.events;
+  } catch (err) {
+    obsLog("error", "core", `Collection cycle failed: ${err instanceof Error ? err.message : "unknown"}`);
+    return [];
+  } finally {
+    collectionRunning = false;
+  }
+}
+
+export function startAutoCollection(): void {
+  if (autoStarted) return;
+  autoStarted = true;
+
+  // Register collection tasks for each module
+  for (const [name, mod] of moduleRegistry) {
+    if (mod.enabled) {
+      registerTask(name, mod.name, mod.category, async () => {
+        try {
+          const events = await mod.fetch();
+          const existingEvents = Array.from(eventStore.values());
+          const result = runPipeline(events, existingEvents, mod.name, mod.category);
+
+          for (const event of result.events) {
+            eventStore.set(event.id, event);
+          }
+          for (const alert of result.alerts) {
+            if (!alertStore.has(alert.id)) {
+              alertStore.set(alert.id, alert);
+            }
+          }
+          totalEventsCollected += result.events.length;
+        } catch (err) {
+          obsLog("error", name, `Scheduled collection failed: ${err instanceof Error ? err.message : "unknown"}`);
+        }
+      });
     }
   }
 
-  // Normalizar e armazenar
-  for (const event of allEvents) {
-    eventStore.set(event.id, event);
-  }
+  startScheduler();
+  obsLog("info", "core", "Auto-collection started", { modules: moduleRegistry.size });
+}
 
-  // Gerar alertas para eventos de alto risco
-  for (const event of allEvents) {
-    if (isHighRisk(event.riskLevel)) {
-      generateAlert(event);
-    }
-  }
-
-  // Correlacionar eventos
-  const correlations = correlateEvents(allEvents);
-  for (const corr of correlations) {
-    correlationStore.set(corr.eventId, corr);
-  }
-
-  return allEvents;
+export function stopAutoCollection(): void {
+  stopScheduler();
+  autoStarted = false;
 }
 
 export function ingestEvent(event: GlobalEvent): void {
@@ -348,4 +452,54 @@ export async function healthCheck(): Promise<Record<string, boolean>> {
     }
   }
   return results;
+}
+
+// ─── OPERATIONAL PANEL ──────────────────────────────────────
+
+export function getOperationalData() {
+  return getOperationalPanel(
+    eventStore.size,
+    alertStore.size,
+    moduleRegistry.size,
+    getRegisteredModules().filter(m => m.enabled).length
+  );
+}
+
+export function getSystemData() {
+  return getSystemMetrics(
+    eventStore.size,
+    alertStore.size,
+    totalEventsCollected,
+    totalCorrelations,
+    moduleRegistry.size,
+    getRegisteredModules().filter(m => m.enabled).length
+  );
+}
+
+export function getSchedulerData() {
+  return getSchedulerStatus();
+}
+
+export function getCacheData() {
+  return cacheStats();
+}
+
+export function getCircuitBreakerData() {
+  return getAllCircuitBreakers();
+}
+
+export function getMonitorMetricsData(source?: string) {
+  return getMonitorMetrics(source);
+}
+
+export function triggerCollection(): Promise<GlobalEvent[]> {
+  return collectAll();
+}
+
+export function getEventStoreSize(): number {
+  return eventStore.size;
+}
+
+export function getAlertStoreSize(): number {
+  return alertStore.size;
 }

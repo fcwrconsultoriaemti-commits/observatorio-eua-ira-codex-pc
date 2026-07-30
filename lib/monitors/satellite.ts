@@ -64,7 +64,7 @@ const MONITOR: MonitorModule = {
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const [modisRes, sentinelRes] = await Promise.allSettled([
-        fetch("https://firms.modaps.eosdis.nasa.gov/api/area/csv/MODIS_NRT/WORLD/1/2024-01-01", {
+        fetch(`https://firms.modaps.eosdis.nasa.gov/api/area/csv/MODIS_NRT/WORLD/1/${new Date(Date.now() - 86400000).toISOString().split("T")[0]}`, {
           signal: controller.signal,
         }),
         fetch("https://api.sentinel-hub.com/ogc/api/collections/S2L2A/sc", {
